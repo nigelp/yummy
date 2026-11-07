@@ -104,6 +104,7 @@ export interface YummyState {
   deleteCustomPantryItem: (id: string) => void;
   clearPantry: () => void;
   addRecipe: (recipe: Recipe) => void;
+  importRecipes: (recipes: Recipe[]) => { added: number; skipped: number };
   updateRecipe: (id: string, patch: Partial<Recipe>) => void;
   deleteRecipe: (id: string) => void;
   toggleFavorite: (id: string) => void;
@@ -216,6 +217,35 @@ export const useApp = create<YummyState>()(
           featured: state.featured.filter((r) => r.id !== recipe.id),
           pantryOnline: state.pantryOnline.filter((r) => r.id !== recipe.id),
         })),
+
+      importRecipes: (incoming) => {
+        let added = 0;
+        let skipped = 0;
+        set((state) => {
+          const existing = new Set(state.recipes.map((r) => r.id));
+          const fresh: Recipe[] = [];
+          for (const recipe of incoming) {
+            if (existing.has(recipe.id)) {
+              skipped += 1;
+              continue;
+            }
+            existing.add(recipe.id);
+            fresh.push(ensureRecipeMeta(recipe));
+            added += 1;
+          }
+          if (fresh.length === 0) {
+            return { toast: "Those recipes are already in your library" };
+          }
+          const ids = new Set(fresh.map((recipe) => recipe.id));
+          return {
+            recipes: [...fresh, ...state.recipes],
+            featured: state.featured.filter((recipe) => !ids.has(recipe.id)),
+            pantryOnline: state.pantryOnline.filter((recipe) => !ids.has(recipe.id)),
+            toast: added === 1 ? "Imported 1 recipe" : `Imported ${added} recipes`,
+          };
+        });
+        return { added, skipped };
+      },
 
       updateRecipe: (id, patch) =>
         set((state) => ({

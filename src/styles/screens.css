@@ -801,3 +801,8 @@ textarea:focus-visible {
   align-self: flex-start;
   font-size: 9.5px;
 }
+
+.settings-action:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

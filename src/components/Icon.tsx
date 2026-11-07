@@ -87,6 +87,18 @@ const PATHS: Record<string, ReactNode> = {
       <circle cx="12" cy="13.8" r="3.5" />
     </>
   ),
+  download: (
+    <>
+      <path d="M12 3v11M8.4 10.4 12 14l3.6-3.6" />
+      <path d="M4 17v2.2A1.8 1.8 0 0 0 5.8 21h12.4a1.8 1.8 0 0 0 1.8-1.8V17" />
+    </>
+  ),
+  upload: (
+    <>
+      <path d="M12 14V3M8.4 6.6 12 3l3.6 3.6" />
+      <path d="M4 17v2.2A1.8 1.8 0 0 0 5.8 21h12.4a1.8 1.8 0 0 0 1.8-1.8V17" />
+    </>
+  ),
   search: (
     <>
       <circle cx="10.8" cy="10.8" r="6.6" />
