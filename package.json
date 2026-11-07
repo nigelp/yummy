@@ -1,0 +1,39 @@
+{
+  "name": "yummy",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Yummy — a pastel pantry-first recipe companion, Rust-powered, on your phone.",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5178",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 4178",
+    "typecheck": "tsc --noEmit",
+    "cap": "cap",
+    "sync": "npm run build && cap sync android",
+    "apk": "npm run sync && cd android && ./gradlew assembleDebug",
+    "apk:release": "npm run sync && cd android && ./gradlew assembleRelease",
+    "seed": "cd rust/yummy-core && cargo run --quiet --bin seedgen -- ../../src/data/seed-source.json ../../src/data/seed.json",
+    "core:android": "cd rust/yummy-core && cargo ndk -t arm64-v8a -t armeabi-v7a -t x86_64 -o ../../android/app/src/main/jniLibs build --release"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.2.1",
+    "@capacitor/filesystem": "^6.0.2",
+    "@capacitor/share": "^6.0.3",
+    "@fontsource/fraunces": "^5.1.1",
+    "@fontsource/nunito": "^5.1.1",
+    "framer-motion": "^11.15.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^5.0.2"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^6.2.1",
+    "@capacitor/cli": "^6.2.1",
+    "@types/react": "^18.3.17",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.11"
+  }
+}

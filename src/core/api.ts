@@ -1,0 +1,360 @@
+import { CapacitorHttp } from "@capacitor/core";
+import { catalog, catalogById, catalogItems } from "../data/catalog";
+import { isNative, nativeCall, Ocr } from "./native";
+import { ensureRecipeMeta } from "../lib/classify";
+import * as preview from "./preview";
+import type {
+  Ingredient,
+  MatchResult,
+  PantryEntry,
+  Recipe,
+  ScaleResult,
+  Settings,
+} from "./types";
+
+export { catalog, catalogById, catalogItems };
+
+const MEAL_API = "https://www.themealdb.com/api/json/v1/1";
+
+const CATEGORY_EMOJI: Record<string, string> = {
+  beef: "🥩",
+  chicken: "🍗",
+  dessert: "🍰",
+  lamb: "🍖",
+  miscellaneous: "🍲",
+  pasta: "🍝",
+  pork: "🥓",
+  seafood: "🐟",
+  side: "🥗",
+  starter: "🥟",
+  vegan: "🥦",
+  vegetarian: "🥬",
+  breakfast: "🥞",
+  goat: "🍖",
+};
+
+const ART_KEYS = ["citrus", "herb", "sunset", "mint", "lilac", "rose", "butter", "sky"];
+
+function pickArt(seed: string): string {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) hash = (hash * 31 + seed.charCodeAt(i)) % 997;
+  return ART_KEYS[hash % ART_KEYS.length];
+}
+
+async function httpHtml(url: string): Promise<string> {
+  if (isNative) {
+    const response = await CapacitorHttp.get({
+      url,
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36",
+        Accept: "text/html,application/xhtml+xml",
+        "Accept-Language": "en-GB,en;q=0.9",
+      },
+      connectTimeout: 20000,
+      readTimeout: 25000,
+    });
+    if (response.status >= 400) {
+      throw new Error(`The site returned ${response.status}. Try another link.`);
+    }
+    return typeof response.data === "string" ? response.data : JSON.stringify(response.data);
+  }
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`The site returned ${response.status}. Try another link.`);
+  return response.text();
+}
+
+async function httpJson<T>(url: string): Promise<T> {
+  if (isNative) {
+    const response = await CapacitorHttp.get({ url, connectTimeout: 15000, readTimeout: 20000 });
+    if (response.status >= 400) throw new Error("Meal service unavailable");
+    return (typeof response.data === "string" ? JSON.parse(response.data) : response.data) as T;
+  }
+  const response = await fetch(url);
+  if (!response.ok) throw new Error("Meal service unavailable");
+  return (await response.json()) as T;
+}
+
+function parseOcrTextPreview(text: string): Recipe {
+  const lines = text
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const lower = lines.map((l) => l.toLowerCase());
+  const ingIdx = lower.findIndex((l) => l.includes("ingredient"));
+  const stepIdx = lower.findIndex(
+    (l) => l.includes("method") || l.includes("instruction") || l.includes("direction")
+  );
+  const ingredients: string[] =
+    ingIdx >= 0
+      ? lines.slice(ingIdx + 1, stepIdx > ingIdx ? stepIdx : undefined)
+      : lines.filter((l) => /^\d/.test(l) || /(g|ml|tbsp|tsp|cup|pinch)/i.test(l));
+  const steps: string[] =
+    stepIdx >= 0
+      ? lines.slice(stepIdx + 1).filter((l) => l.length > 15)
+      : [];
+  return {
+    id: `photo-${Date.now()}`,
+    title: lines.find((l) => l.length > 2 && !/ingredient|method/i.test(l)) ?? "My recipe",
+    description: "",
+    servings: 4,
+    ingredients: ingredients.map(preview.parseIngredient),
+    steps,
+    tags: [],
+    emoji: "📷",
+    art: "butter",
+    source: "photo",
+    favorite: false,
+    cookCount: 0,
+    notes: [],
+    warnings: ["Read from a photo — check the amounts before you start."],
+    createdAt: new Date().toISOString(),
+  };
+}
+
+export async function coreCall<T>(
+  method: string,
+  payload: Record<string, unknown>
+): Promise<T> {
+  if (isNative) return nativeCall<T>(method, payload);
+  switch (method) {
+    case "catalog":
+      return catalog as unknown as T;
+    case "health":
+      return { engine: "preview", catalogSize: catalogItems.length } as unknown as T;
+    case "parse_ingredient":
+      return preview.parseIngredient(String(payload.line ?? "")) as unknown as T;
+    case "parse_ingredients":
+      return ((payload.lines as string[]) ?? []).map(preview.parseIngredient) as unknown as T;
+    case "scale_recipe": {
+      const req = payload as {
+        recipe: Recipe;
+        toServings?: number;
+        system?: string;
+      };
+      return preview.scaleRecipe(
+        req.recipe,
+        req.toServings ?? req.recipe.servings,
+        req.system ?? "metric"
+      ) as unknown as T;
+    }
+    case "match_recipes": {
+      const req = payload as {
+        recipes: Recipe[];
+        pantry: PantryEntry[];
+        useStaples?: boolean;
+        substitutions?: boolean;
+      };
+      return preview.matchRecipes(
+        req.recipes,
+        req.pantry,
+        req.useStaples ?? true,
+        req.substitutions ?? true
+      ) as unknown as T;
+    }
+    case "extract_recipe":
+      return preview.demoRecipe(String(payload.url ?? "")) as unknown as T;
+    case "parse_ocr":
+      return parseOcrTextPreview(String(payload.text ?? "")) as unknown as T;
+    default:
+      throw new Error(`Preview mode can't do “${method}” yet.`);
+  }
+}
+
+export async function scale(
+  recipe: Recipe,
+  toServings: number,
+  system: Settings["system"]
+): Promise<ScaleResult> {
+  return coreCall<ScaleResult>("scale_recipe", {
+    recipe,
+    toServings,
+    system,
+  });
+}
+
+export async function match(
+  recipes: Recipe[],
+  pantry: PantryEntry[],
+  settings: Settings
+): Promise<Record<string, MatchResult>> {
+  if (recipes.length === 0) return {};
+  const results = await coreCall<MatchResult[]>("match_recipes", {
+    recipes,
+    pantry: Object.values(pantry),
+    useStaples: settings.useStaples,
+    substitutions: settings.substitutions,
+  });
+  return Object.fromEntries(results.map((r) => [r.recipeId, r]));
+}
+
+export function pickUrl(text: string): string | null {
+  const match = text.match(/https?:\/\/[^\s<>"']+/i);
+  return match ? match[0].replace(/[).,]+$/, "") : null;
+}
+
+export async function extractFromUrl(url: string): Promise<Recipe> {
+  const clean = pickUrl(url) ?? url.trim();
+  if (!/^https?:\/\//i.test(clean)) {
+    throw new Error("That doesn't look like a web address. Paste the full recipe link.");
+  }
+  if (!isNative) return preview.demoRecipe(clean);
+  const html = await httpHtml(clean);
+  const recipe = await coreCall<Recipe>("extract_recipe", { html, url: clean });
+  return normalizeRecipe(recipe, "web");
+}
+
+export async function recognizePhoto(dataUrl: string): Promise<string> {
+  if (!isNative) return preview.demoOcr().text;
+  const result = await Ocr.recognize({ image: dataUrl });
+  return result.text;
+}
+
+export function normalizeRecipe(recipe: Recipe, source: Recipe["source"]): Recipe {
+  const normalised: Recipe = {
+    ...recipe,
+    id: recipe.id || `${source}-${Date.now()}`,
+    source: recipe.source ?? source,
+    emoji: recipe.emoji || CATEGORY_EMOJI[(recipe.tags?.[0] ?? "").toLowerCase()] || "🍲",
+    art: recipe.art || pickArt(recipe.id || recipe.title || "yummy"),
+    tags: recipe.tags ?? [],
+    ingredients: recipe.ingredients ?? [],
+    steps: recipe.steps ?? [],
+    notes: recipe.notes ?? [],
+    warnings: recipe.warnings ?? [],
+    favorite: recipe.favorite ?? false,
+    cookCount: recipe.cookCount ?? 0,
+    createdAt: recipe.createdAt || new Date().toISOString(),
+  };
+  return ensureRecipeMeta(normalised);
+}
+
+interface MealDbMeal {
+  idMeal: string;
+  strMeal: string;
+  strCategory?: string;
+  strArea?: string;
+  strInstructions?: string;
+  strMealThumb?: string;
+  [key: string]: unknown;
+}
+
+function mealToRecipe(meal: MealDbMeal): Recipe {
+  const lines: string[] = [];
+  for (let i = 1; i <= 20; i += 1) {
+    const name = String(meal[`strIngredient${i}`] ?? "").trim();
+    const measure = String(meal[`strMeasure${i}`] ?? "").trim();
+    if (name) lines.push(`${measure} ${name}`.trim());
+  }
+  const instructions = (meal.strInstructions ?? "")
+    .replace(/\r/g, "")
+    .split(/\n+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 25);
+  const steps =
+    instructions.length >= 2
+      ? instructions
+      : (meal.strInstructions ?? "")
+          .split(/(?<=\.)\s+(?=[A-Z])/)
+          .map((s) => s.trim())
+          .filter((s) => s.length > 20);
+  const category = (meal.strCategory ?? "").toLowerCase();
+  return normalizeRecipe(
+    {
+      id: `meal-${meal.idMeal}`,
+      title: meal.strMeal,
+      description: [meal.strArea, meal.strCategory].filter(Boolean).join(" · "),
+      image: meal.strMealThumb,
+      sourceUrl: `https://www.themealdb.com/meal/${meal.idMeal}`,
+      servings: 4,
+      timeMin: 25 + (Number(meal.idMeal) % 30),
+      cuisine: meal.strArea,
+      tags: [meal.strCategory, meal.strArea].filter(Boolean).map((t) => String(t).toLowerCase()),
+      ingredients: lines.map(preview.parseIngredient),
+      steps,
+      emoji: CATEGORY_EMOJI[category] ?? "🍲",
+      art: pickArt(meal.idMeal),
+    } as Recipe,
+    "featured"
+  );
+}
+
+interface MealDbSummary {
+  idMeal: string;
+  strMeal: string;
+  strMealThumb?: string;
+}
+
+async function lookupMeal(id: string): Promise<MealDbMeal | null> {
+  try {
+    const data = await httpJson<{ meals: MealDbMeal[] | null }>(
+      `${MEAL_API}/lookup.php?i=${encodeURIComponent(id)}`
+    );
+    return data.meals?.[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function categoryMeals(category: string, limit: number): Promise<MealDbMeal[]> {
+  try {
+    const data = await httpJson<{ meals: MealDbSummary[] | null }>(
+      `${MEAL_API}/filter.php?c=${encodeURIComponent(category)}`
+    );
+    const ids = (data.meals ?? []).slice(0, limit).map((meal) => meal.idMeal);
+    const full = await Promise.all(ids.map(lookupMeal));
+    return full.filter((meal): meal is MealDbMeal => !!meal && !!meal.strMeal);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * TheMealDB gives us a genuinely varied pool: its random selection plus a few
+ * hand-picked categories so breakfast, lighter meals and desserts all show up.
+ * Pantry relevance is applied afterwards by the Rust matcher.
+ */
+export async function fetchFeatured(): Promise<Recipe[]> {
+  try {
+    const pool: MealDbMeal[] = [];
+    const seen = new Set<string>();
+    const push = (meal: MealDbMeal | null | undefined) => {
+      if (!meal || !meal.strMeal || seen.has(meal.idMeal)) return;
+      seen.add(meal.idMeal);
+      pool.push(meal);
+    };
+
+    const [random, breakfast, pasta, seafood] = await Promise.all([
+      httpJson<{ meals: MealDbMeal[] | null }>(`${MEAL_API}/randomselection.php`).catch(
+        () => ({ meals: null as MealDbMeal[] | null })
+      ),
+      categoryMeals("Breakfast", 3),
+      categoryMeals("Pasta", 2),
+      categoryMeals("Seafood", 2),
+    ]);
+
+    (random.meals ?? []).forEach(push);
+    breakfast.forEach(push);
+    pasta.forEach(push);
+    seafood.forEach(push);
+
+    if (pool.length === 0) {
+      const fallback = await httpJson<{ meals: MealDbMeal[] | null }>(
+        `${MEAL_API}/search.php?s=`
+      ).catch(() => ({ meals: null as MealDbMeal[] | null }));
+      (fallback.meals ?? []).forEach(push);
+    }
+
+    return pool.slice(0, 18).map(mealToRecipe);
+  } catch {
+    return [];
+  }
+}
+
+export function recipeEmoji(recipe: Recipe): string {
+  return recipe.emoji || "🍲";
+}
+
+export function ingredientLines(ingredients: Ingredient[]): string {
+  return ingredients.map((i) => i.raw).join("\n");
+}

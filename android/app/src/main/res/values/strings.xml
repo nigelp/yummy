@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Yummy</string>
+    <string name="title_activity_main">Yummy</string>
+    <string name="package_name">app.yummy.recipes</string>
+    <string name="custom_url_scheme">app.yummy.recipes</string>
+</resources>

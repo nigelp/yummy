@@ -1,0 +1,555 @@
+{
+  "recipes": [
+    {
+      "id": "lemon-pasta",
+      "title": "Lemon Butter Pasta",
+      "description": "Silky, bright and on the table before the kettle cools.",
+      "emoji": "🍋",
+      "art": "citrus",
+      "servings": 4,
+      "timeMin": 20,
+      "cuisine": "Italian",
+      "tags": [
+        "vegetarian",
+        "quick",
+        "pasta",
+        "comfort"
+      ],
+      "ingredients": [
+        "300 g spaghetti",
+        "60 g unsalted butter",
+        "2 cloves garlic, finely sliced",
+        "1 lemon, zest and juice",
+        "60 g parmesan, finely grated",
+        "A handful of parsley, chopped",
+        "Salt and black pepper"
+      ],
+      "steps": [
+        "Bring a large pot of well-salted water to the boil and cook the spaghetti until al dente.",
+        "Melt the butter in a wide pan over low heat, add the garlic and cook gently for 1 minute — don't let it colour.",
+        "Zest the lemon into the butter, then squeeze in the juice and swirl to make a glossy sauce.",
+        "Lift the pasta straight into the pan with a splash of its cooking water and toss hard until every strand is coated.",
+        "Fold through the parmesan and parsley, season generously, and serve immediately."
+      ],
+      "mealType": "dinner"
+    },
+    {
+      "id": "chicken-peas",
+      "title": "One-Pan Chicken & Peas",
+      "description": "Crisp skin, soft peas, one tray to wash. The weeknight classic.",
+      "emoji": "🍗",
+      "art": "herb",
+      "servings": 4,
+      "timeMin": 35,
+      "cuisine": "British",
+      "tags": [
+        "family",
+        "one-pan",
+        "high-protein",
+        "gluten-free",
+        "hearty"
+      ],
+      "ingredients": [
+        "4 chicken thighs, bone in and skin on",
+        "1 tbsp olive oil",
+        "1 onion, sliced",
+        "2 cloves garlic, crushed",
+        "200 g frozen peas",
+        "300 ml chicken stock",
+        "1 lemon, cut into wedges",
+        "Salt and black pepper"
+      ],
+      "steps": [
+        "Heat the oven to 220°C. Pat the chicken dry, season it well and rub with a little oil.",
+        "Sit the thighs skin-side up in a roasting tray and roast for 20 minutes until the skin starts to crisp.",
+        "Scatter the onion and garlic around the chicken, pour in the stock and return to the oven for 10 minutes.",
+        "Tip in the peas and lemon wedges for the last 5 minutes, until the peas are just tender.",
+        "Spoon the pan juices over everything and serve with crusty bread or mashed potatoes."
+      ],
+      "mealType": "dinner"
+    },
+    {
+      "id": "coconut-curry",
+      "title": "Coconut Chickpea Curry",
+      "description": "A pantry curry that tastes like you planned it all week.",
+      "emoji": "🥥",
+      "art": "sunset",
+      "servings": 4,
+      "timeMin": 30,
+      "cuisine": "Indian",
+      "tags": [
+        "vegan",
+        "one-pan",
+        "gluten-free",
+        "freezer-friendly",
+        "hearty"
+      ],
+      "ingredients": [
+        "1 tbsp coconut oil",
+        "1 onion, finely chopped",
+        "3 cloves garlic, grated",
+        "1 tbsp ginger, grated",
+        "2 tbsp curry powder",
+        "1 (400 g) can coconut milk",
+        "1 (400 g) can chickpeas, drained",
+        "200 g spinach",
+        "1 lime, juiced",
+        "200 g rice"
+      ],
+      "steps": [
+        "Cook the rice according to the packet, then leave it covered off the heat.",
+        "Warm the coconut oil in a deep pan and soften the onion for 6 minutes.",
+        "Add the garlic, ginger and curry powder and stir for 1 minute until fragrant.",
+        "Pour in the coconut milk and chickpeas, season, and simmer for 12 minutes.",
+        "Fold in the spinach until it wilts, squeeze in the lime, and serve over the rice."
+      ],
+      "mealType": "dinner"
+    },
+    {
+      "id": "salmon-greens",
+      "title": "Sheet-Pan Salmon & Greens",
+      "description": "Fifteen minutes of oven time, zero fuss, dinner sorted.",
+      "emoji": "🐟",
+      "art": "mint",
+      "servings": 2,
+      "timeMin": 25,
+      "cuisine": "Nordic",
+      "tags": [
+        "pescatarian",
+        "one-pan",
+        "quick",
+        "low-carb",
+        "gluten-free",
+        "fish"
+      ],
+      "ingredients": [
+        "2 salmon fillets",
+        "300 g baby potatoes, halved",
+        "200 g green beans",
+        "1 lemon, sliced",
+        "2 tbsp olive oil",
+        "1 tbsp dill, chopped",
+        "Salt and black pepper"
+      ],
+      "steps": [
+        "Heat the oven to 200°C and boil the potatoes for 8 minutes until just tender.",
+        "Spread the potatoes and green beans on a tray, drizzle with oil and season.",
+        "Sit the salmon among the vegetables, top with lemon slices, and roast for 12–14 minutes.",
+        "Scatter with dill and serve straight from the tray with the lemony pan juices."
+      ],
+      "mealType": "dinner"
+    },
+    {
+      "id": "pancakes",
+      "title": "Fluffy Buttermilk Pancakes",
+      "description": "Tall, soft stacks for slow mornings and hungry children.",
+      "emoji": "🥞",
+      "art": "butter",
+      "servings": 4,
+      "timeMin": 20,
+      "cuisine": "American",
+      "tags": [
+        "breakfast",
+        "family",
+        "vegetarian",
+        "sweet"
+      ],
+      "ingredients": [
+        "250 g flour",
+        "2 tbsp sugar",
+        "2 tsp baking powder",
+        "1/2 tsp baking soda",
+        "1/2 tsp salt",
+        "300 ml buttermilk",
+        "2 eggs",
+        "30 g butter, melted",
+        "1 tsp vanilla extract"
+      ],
+      "steps": [
+        "Whisk the flour, sugar, baking powder, soda and salt in a big bowl.",
+        "Beat the buttermilk, eggs, melted butter and vanilla in a jug.",
+        "Pour the wet into the dry and fold just until combined — lumps are your friend.",
+        "Rest the batter for 5 minutes while a non-stick pan warms over medium heat.",
+        "Cook ladlefuls for 2 minutes until bubbles pop, flip, and give them another minute."
+      ],
+      "mealType": "breakfast"
+    },
+    {
+      "id": "white-bean-stew",
+      "title": "Tomato & White Bean Stew",
+      "description": "Cheap, cosy and better the next day. Freeze half for future you.",
+      "emoji": "🍅",
+      "art": "sunset",
+      "servings": 4,
+      "timeMin": 30,
+      "cuisine": "Mediterranean",
+      "tags": [
+        "vegan",
+        "budget",
+        "one-pan",
+        "hearty",
+        "gluten-free"
+      ],
+      "ingredients": [
+        "2 tbsp olive oil",
+        "1 onion, diced",
+        "2 carrots, diced",
+        "2 cloves garlic, sliced",
+        "1 tbsp tomato paste",
+        "1 (400 g) can chopped tomatoes",
+        "1 (400 g) can cannellini beans, drained",
+        "300 ml vegetable stock",
+        "1 tsp paprika",
+        "A handful of parsley"
+      ],
+      "steps": [
+        "Soften the onion and carrot in the oil for 8 minutes with a pinch of salt.",
+        "Stir in the garlic, tomato paste and paprika and cook for 2 minutes.",
+        "Add the tomatoes, beans and stock. Simmer gently for 15 minutes.",
+        "Crush a few beans against the pan to thicken the stew, then taste and season.",
+        "Finish with parsley and a drizzle of olive oil, with toast on the side."
+      ],
+      "mealType": "lunch"
+    },
+    {
+      "id": "mushroom-toast",
+      "title": "Garlic Mushroom Toast",
+      "description": "Buttery mushrooms piled on sourdough. Lunch, sorted in 15.",
+      "emoji": "🍄",
+      "art": "herb",
+      "servings": 2,
+      "timeMin": 15,
+      "cuisine": "British",
+      "tags": [
+        "vegetarian",
+        "quick",
+        "lunch",
+        "comfort"
+      ],
+      "ingredients": [
+        "4 slices sourdough",
+        "300 g mushrooms, sliced",
+        "2 cloves garlic, minced",
+        "30 g butter",
+        "1 tbsp parsley, chopped",
+        "1 lemon, zest",
+        "Salt and black pepper"
+      ],
+      "steps": [
+        "Toast the sourdough until deeply golden and rub lightly with a cut garlic clove.",
+        "Melt half the butter in a wide pan and fry the mushrooms in a single layer, undisturbed, for 3 minutes.",
+        "Stir, add the rest of the butter and the garlic, and cook for 2 more minutes.",
+        "Finish with lemon zest, parsley and plenty of pepper, then pile onto the toast."
+      ],
+      "mealType": "lunch"
+    },
+    {
+      "id": "beef-broccoli",
+      "title": "Beef & Broccoli Stir-Fry",
+      "description": "Glossy, savoury and faster than a takeaway order.",
+      "emoji": "🥦",
+      "art": "mint",
+      "servings": 4,
+      "timeMin": 25,
+      "cuisine": "Chinese",
+      "tags": [
+        "quick",
+        "family",
+        "high-protein",
+        "meaty"
+      ],
+      "ingredients": [
+        "500 g beef, thinly sliced",
+        "1 head broccoli, cut into florets",
+        "3 tbsp soy sauce",
+        "1 tbsp honey",
+        "2 cloves garlic, minced",
+        "1 tbsp ginger, grated",
+        "2 tbsp vegetable oil",
+        "200 g rice",
+        "1 tsp cornstarch"
+      ],
+      "steps": [
+        "Cook the rice and keep it covered.",
+        "Toss the beef with 1 tbsp soy sauce and the cornstarch and leave it for 10 minutes.",
+        "Blanch the broccoli in boiling water for 2 minutes, then drain.",
+        "Sear the beef in a very hot wok for 90 seconds, remove, then fry the garlic and ginger for 30 seconds.",
+        "Return the beef with the broccoli, remaining soy and honey, and toss until glossy. Serve over rice."
+      ],
+      "mealType": "dinner"
+    },
+    {
+      "id": "sweet-potato-bowls",
+      "title": "Roasted Sweet Potato Bowls",
+      "description": "Golden cubes, crisp chickpeas and a lemony yogurt swoosh.",
+      "emoji": "🍠",
+      "art": "lilac",
+      "servings": 2,
+      "timeMin": 35,
+      "cuisine": "Californian",
+      "tags": [
+        "vegetarian",
+        "meal-prep",
+        "gluten-free",
+        "good-for-you"
+      ],
+      "ingredients": [
+        "2 sweet potatoes, cubed",
+        "2 tbsp olive oil",
+        "1 tsp cumin",
+        "1 (400 g) can chickpeas, drained",
+        "100 g feta, crumbled",
+        "100 g spinach",
+        "1 lemon, juiced",
+        "2 tbsp yogurt"
+      ],
+      "steps": [
+        "Heat the oven to 220°C. Toss the sweet potato and chickpeas with oil, cumin and salt.",
+        "Roast on a large tray for 25 minutes, shaking halfway, until the edges are crisp.",
+        "Stir the lemon juice into the yogurt with a pinch of salt.",
+        "Wilt the spinach in a hot pan for 1 minute.",
+        "Build the bowls with spinach, roast vegetables, feta and a generous spoon of lemon yogurt."
+      ],
+      "mealType": "lunch"
+    },
+    {
+      "id": "apple-crumble",
+      "title": "Apple & Oat Crumble",
+      "description": "The smell of a Sunday kitchen. Serve with cold cream.",
+      "emoji": "🍎",
+      "art": "rose",
+      "servings": 6,
+      "timeMin": 45,
+      "cuisine": "British",
+      "tags": [
+        "dessert",
+        "family",
+        "vegetarian",
+        "sweet"
+      ],
+      "ingredients": [
+        "6 apples, peeled and sliced",
+        "2 tbsp sugar",
+        "1 tsp cinnamon",
+        "100 g flour",
+        "80 g butter, cold and cubed",
+        "60 g oats",
+        "50 g brown sugar",
+        "A pinch of salt"
+      ],
+      "steps": [
+        "Heat the oven to 190°C. Toss the apples with sugar and cinnamon in a baking dish.",
+        "Rub the flour and cold butter together with your fingertips until it looks like rough breadcrumbs.",
+        "Stir in the oats, brown sugar and salt.",
+        "Scatter the crumble over the apples in a thick, uneven layer.",
+        "Bake for 30–35 minutes until bubbling at the edges and golden on top. Rest 10 minutes before serving."
+      ],
+      "mealType": "dessert"
+    },
+    {
+      "id": "shakshuka",
+      "title": "Sunday Shakshuka",
+      "description": "Eggs poached in a smoky tomato pan. Bring bread, bring people.",
+      "emoji": "🍳",
+      "art": "peach",
+      "servings": 4,
+      "timeMin": 25,
+      "cuisine": "Middle Eastern",
+      "tags": [
+        "vegetarian",
+        "brunch",
+        "one-pan",
+        "low-carb",
+        "gluten-free"
+      ],
+      "ingredients": [
+        "2 tbsp olive oil",
+        "1 onion, sliced",
+        "1 red pepper, sliced",
+        "2 cloves garlic, sliced",
+        "1 tsp cumin",
+        "1 tsp paprika",
+        "1 (400 g) can chopped tomatoes",
+        "4 eggs",
+        "100 g feta, crumbled",
+        "A handful of cilantro"
+      ],
+      "steps": [
+        "Soften the onion and pepper in the oil for 8 minutes until slippery and sweet.",
+        "Add the garlic, cumin and paprika and cook for 1 minute.",
+        "Pour in the tomatoes, season, and simmer for 8 minutes until thick.",
+        "Make four wells, crack in the eggs, cover the pan and cook for 5–7 minutes until the whites are set.",
+        "Scatter with feta and cilantro and bring the pan to the table."
+      ],
+      "mealType": "breakfast"
+    },
+    {
+      "id": "cucumber-salad",
+      "title": "Cucumber & Feta Salad",
+      "description": "Crunchy, salty, lemony. The ten-minute side that steals the show.",
+      "emoji": "🥒",
+      "art": "mint",
+      "servings": 2,
+      "timeMin": 10,
+      "cuisine": "Greek",
+      "tags": [
+        "vegetarian",
+        "quick",
+        "no-cook",
+        "low-carb",
+        "gluten-free"
+      ],
+      "ingredients": [
+        "1 cucumber, sliced",
+        "100 g feta, crumbled",
+        "1 lemon, juiced",
+        "2 tbsp olive oil",
+        "1 tbsp dill, chopped",
+        "A handful of mint",
+        "Salt and black pepper"
+      ],
+      "steps": [
+        "Salt the cucumber slices lightly in a colander for 5 minutes, then pat dry.",
+        "Whisk the lemon juice with the olive oil and a good grind of pepper.",
+        "Toss the cucumber with the dressing, dill and mint.",
+        "Scatter over the feta and serve straight away while it's crisp."
+      ],
+      "mealType": "lunch"
+    },
+    {
+      "id": "overnight-oats",
+      "title": "Overnight Oats with Blueberries",
+      "description": "Five minutes tonight, breakfast already sorted tomorrow.",
+      "emoji": "🥣",
+      "art": "sky",
+      "servings": 2,
+      "timeMin": 5,
+      "cuisine": "Everyday",
+      "mealType": "breakfast",
+      "tags": [
+        "breakfast",
+        "make-ahead",
+        "vegetarian",
+        "quick",
+        "high-fibre"
+      ],
+      "ingredients": [
+        "200 g oats",
+        "400 ml milk",
+        "2 tbsp yogurt",
+        "1 tbsp honey",
+        "1 tsp vanilla extract",
+        "100 g blueberries",
+        "2 tbsp seeds"
+      ],
+      "steps": [
+        "Stir the oats, milk, yogurt, honey and vanilla together in a bowl or two jars.",
+        "Cover and chill overnight — at least 6 hours.",
+        "In the morning, loosen with a splash of milk and top with blueberries and seeds."
+      ]
+    },
+    {
+      "id": "cheese-toastie",
+      "title": "Tomato & Cheddar Toastie",
+      "description": "Buttered sourdough, sharp cheddar, sweet tomato. Lunch in ten.",
+      "emoji": "🥪",
+      "art": "butter",
+      "servings": 2,
+      "timeMin": 12,
+      "cuisine": "British",
+      "mealType": "lunch",
+      "tags": [
+        "lunch",
+        "vegetarian",
+        "quick",
+        "comfort"
+      ],
+      "ingredients": [
+        "4 slices sourdough",
+        "2 tbsp butter",
+        "100 g cheddar, grated",
+        "2 tomatoes, sliced",
+        "1 tsp mustard",
+        "Salt and black pepper"
+      ],
+      "steps": [
+        "Butter the outside of each slice of bread and spread mustard on the insides.",
+        "Layer cheddar and tomato, season, and close the sandwiches.",
+        "Cook in a dry pan over medium heat for 3–4 minutes per side, pressing gently, until deeply golden.",
+        "Cut in half and eat while the cheese is stretchy."
+      ]
+    },
+    {
+      "id": "tuna-salad",
+      "title": "Chickpea & Tuna Salad",
+      "description": "A ten-minute lunch with crunch, lemon and plenty of protein.",
+      "emoji": "🐟",
+      "art": "mint",
+      "servings": 2,
+      "timeMin": 10,
+      "cuisine": "Mediterranean",
+      "mealType": "lunch",
+      "tags": [
+        "lunch",
+        "fish",
+        "high-protein",
+        "quick",
+        "gluten-free",
+        "low-carb",
+        "no-cook"
+      ],
+      "ingredients": [
+        "1 (145 g) can tuna, drained",
+        "1 (400 g) can chickpeas, drained",
+        "1 cucumber, diced",
+        "100 g cherry tomatoes, halved",
+        "2 tbsp olive oil",
+        "1 lemon, juiced",
+        "1 tbsp parsley, chopped",
+        "Salt and black pepper"
+      ],
+      "steps": [
+        "Flake the tuna into a big bowl and add the chickpeas.",
+        "Fold in the cucumber, tomatoes and parsley.",
+        "Dress with olive oil and lemon, season generously, and toss gently. Serve with leaves or warm flatbread."
+      ]
+    },
+    {
+      "id": "tomato-soup",
+      "title": "Roasted Tomato Soup",
+      "description": "Sweet roasted tomatoes blitzed into a velvety bowl.",
+      "emoji": "🍅",
+      "art": "sunset",
+      "servings": 4,
+      "timeMin": 40,
+      "cuisine": "Mediterranean",
+      "mealType": "lunch",
+      "tags": [
+        "lunch",
+        "soup",
+        "vegetarian",
+        "gluten-free",
+        "low-carb",
+        "hearty",
+        "comfort"
+      ],
+      "ingredients": [
+        "1 kg tomatoes, halved",
+        "1 onion, quartered",
+        "3 cloves garlic",
+        "2 tbsp olive oil",
+        "500 ml vegetable stock",
+        "1 tsp paprika",
+        "A handful of basil",
+        "Salt and black pepper"
+      ],
+      "steps": [
+        "Heat the oven to 210°C. Toss the tomatoes, onion and garlic with oil, salt and paprika on a tray.",
+        "Roast for 25 minutes until the edges are sticky and caramelised.",
+        "Tip everything into a pot with the stock and simmer for 8 minutes.",
+        "Blend until smooth — add a splash more stock if you like it thinner.",
+        "Season to taste and finish with torn basil and a swirl of oil."
+      ]
+    }
+  ]
+}

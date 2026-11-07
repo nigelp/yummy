@@ -1,0 +1,20 @@
+node_modules/
+dist/
+tmp/
+.gradle/
+android/.gradle/
+android/build/
+android/app/build/
+android/capacitor-cordova-android-plugins/build/
+rust/yummy-core/target/
+*.log
+.DS_Store
+
+# signing material and local installs — keep these out of the public repo
+android/keystore/
+android/keystore.properties
+apk/*.apk
+android/app/src/main/assets/public/
+android/app/src/main/jniLibs/
+.idea/
+*.iml
