@@ -150,11 +150,6 @@ export function FeaturedCard({
       <div className="badge">
         <Icon name="sparkle" size={11} /> web
       </div>
-      {match && (
-        <div className="score-float">
-          <ScorePill score={match.score} />
-        </div>
-      )}
       <div className="caption">
         <strong>{recipe.title}</strong>
         <span>

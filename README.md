@@ -12,7 +12,7 @@ The interface is React + Capacitor; the recipe brain (parsing, scaling, matching
 
 ## Install it (sideload)
 
-The signed APK is at **`apk/Yummy-1.2.1.apk`** (24 MB, Android 8+).
+The signed APK is at **`apk/Yummy-1.2.2.apk`** (24 MB, Android 8+).
 
 1. Copy it to your phone (USB, Drive, `adb push` — whatever is easiest).
 2. Open it. Android will ask permission to install from that app — allow it.
@@ -23,10 +23,10 @@ The APK is a local build artifact and isn't committed to git — build it with t
 Or with a phone connected over USB:
 
 ```bash
-adb install apk/Yummy-1.2.1.apk
+adb install apk/Yummy-1.2.2.apk
 ```
 
-App id `app.yummy.recipes` · version 1.2.1 · universal APK with `arm64-v8a`, `armeabi-v7a` and `x86_64` native libraries.
+App id `app.yummy.recipes` · version 1.2.2 · universal APK with `arm64-v8a`, `armeabi-v7a` and `x86_64` native libraries.
 
 ### Sharing a recipe from Chrome
 
@@ -59,7 +59,9 @@ Open a recipe page → **Share** → **Yummy**. The share sheet target reads the
 ### Web matching
 - TheMealDB is queried with your actual pantry ingredients (`filter.php?i=…`), then each result is fetched in full and run through the same Rust matcher. Chicken + eggs now returns chicken curries, sandwiches, roasts and egg breakfasts — not random desserts.
 - Matched web recipes are cached on the phone for two hours, so the list keeps working offline.
-- The featured rail uses free category and area lists (TheMealDB's `randomselection` endpoint is patron-only as of late 2026). Refresh failures now say what actually happened and offer a retry, instead of claiming you're offline.
+- The featured rail uses free category and area lists (TheMealDB's `randomselection` endpoint is patron-only as of late 2026) and is no longer hidden by the selected meal type.
+- Pantry ids are translated to real TheMealDB ingredient names (pasta → Spaghetti/Penne/Macaroni), and large ingredient lists are sampled rather than read alphabetically — so “Pasta + Garlic” returns carbonara and puttanesca, not the first six A-names.
+- Refresh re-fetches both featured picks and matched web recipes, and failures say what actually happened instead of claiming you're offline.
 - A separate **Browse more from the web** rail keeps a broader, random selection for inspiration.
 
 ### Capture

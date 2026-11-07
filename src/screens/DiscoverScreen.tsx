@@ -49,7 +49,9 @@ export function DiscoverScreen({
   const requested = useRef(false);
   const onlineRequested = useRef("");
 
-  const refresh = async (force = false) => {
+  const pantryKey = useMemo(() => Object.keys(pantry).sort().join("|"), [pantry]);
+
+  const refresh = async (force = false, includeMatches = false) => {
     if (!force && !navigator.onLine) return;
     setFetching(true);
     setFeatureError(null);
@@ -69,6 +71,17 @@ export function DiscoverScreen({
     } finally {
       setFetching(false);
     }
+
+    if (includeMatches && pantryKey && navigator.onLine) {
+      onlineRequested.current = "";
+      setFetchingMatches(true);
+      fetchPantryMatches(Object.values(pantry))
+        .then((list) => {
+          if (list.length) setPantryOnline(list, pantryKey);
+        })
+        .catch(() => undefined)
+        .finally(() => setFetchingMatches(false));
+    }
   };
 
   useEffect(() => {
@@ -78,9 +91,6 @@ export function DiscoverScreen({
       !featuredAt || Date.now() - new Date(featuredAt).getTime() > 4 * 60 * 60 * 1000;
     if (stale) void refresh();
   }, []);
-
-
-  const pantryKey = useMemo(() => Object.keys(pantry).sort().join("|"), [pantry]);
 
   useEffect(() => {
     if (!pantryKey || !navigator.onLine) return;
@@ -214,13 +224,8 @@ export function DiscoverScreen({
     [shown]
   );
 
-  const featuredVisible = useMemo(
-    () =>
-      featured
-        .filter((recipe) => meal === "all" || recipe.mealType === meal)
-        .slice(0, 10),
-    [featured, meal]
-  );
+  // The web rail is a browse feed, not a meal-filtered result set.
+  const featuredVisible = useMemo(() => featured.slice(0, 10), [featured]);
 
   const surprise = () => {
     const pool = shown.slice(0, Math.min(8, shown.length));
@@ -454,7 +459,7 @@ export function DiscoverScreen({
 
       <div className="section-head">
         <h2>Browse more from the web</h2>
-        <button className="link" onClick={() => void refresh(true)} disabled={fetching}>
+        <button className="link" onClick={() => void refresh(true, true)} disabled={fetching}>
           {fetching ? "looking…" : "refresh"}
         </button>
       </div>
@@ -469,18 +474,16 @@ export function DiscoverScreen({
           <p className="small muted" style={{ lineHeight: 1.5 }}>
             {featureError
               ? featureError
-              : featured.length > 0
-                ? "No web recipes for that meal type in the current batch — refresh for another handful."
-                : !navigator.onLine
-                  ? "You're offline — saved recipes still work."
-                  : "Nothing new right now — tap refresh to ask TheMealDB again."}
+              : !navigator.onLine
+                ? "You're offline — saved recipes still work."
+                : "Nothing new right now — tap refresh to ask TheMealDB again."}
           </p>
           {(featureError || featured.length === 0) && (
             <button
               className="secondary-btn"
               style={{ marginTop: 10 }}
               disabled={fetching}
-              onClick={() => void refresh(true)}
+              onClick={() => void refresh(true, true)}
             >
               {fetching ? "Trying…" : "Try again"}
             </button>

@@ -316,10 +316,15 @@ async function filterIds(
     const data = await httpJson<{ meals?: unknown }>(
       `${MEAL_API}/filter.php?${kind}=${encodeURIComponent(value)}`
     );
-    return mealList(data)
+    const ids = mealList(data)
       .filter((meal) => !!meal.idMeal && !!meal.strMeal)
-      .slice(0, limit)
       .map((meal) => meal.idMeal);
+    // The API returns alphabetical lists; randomise so refresh brings variety.
+    for (let i = ids.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [ids[i], ids[j]] = [ids[j], ids[i]];
+    }
+    return ids.slice(0, limit);
   } catch {
     return [];
   }
@@ -369,6 +374,68 @@ export async function fetchFeatured(): Promise<Recipe[]> {
   return pool.slice(0, 18).map(mealToRecipe);
 }
 
+/** TheMealDB ingredient names differ from our pantry names (pasta is Spaghetti/Penne…). */
+const MEALDB_TERMS: Record<string, string[]> = {
+  pasta: ["Spaghetti", "Penne", "Macaroni", "Fusilli"],
+  noodles: ["Egg Noodles", "Rice Noodles", "Noodles"],
+  rice: ["Rice"],
+  potato: ["Potatoes"],
+  sweet_potato: ["Sweet Potato"],
+  tomato: ["Tomatoes"],
+  cheese: ["Cheddar", "Cheese"],
+  parmesan: ["Parmesan"],
+  mozzarella: ["Mozzarella"],
+  feta: ["Feta"],
+  beans: ["Kidney Beans", "Black Beans"],
+  chickpeas: ["Chickpeas"],
+  lentils: ["Lentils"],
+  fish: ["Cod", "Haddock", "White Fish"],
+  salmon: ["Salmon"],
+  tuna: ["Tuna"],
+  shrimp: ["Prawns", "Shrimp"],
+  chicken: ["Chicken"],
+  chicken_breast: ["Chicken Breast", "Chicken"],
+  chicken_thigh: ["Chicken"],
+  beef: ["Beef", "Minced Beef"],
+  pork: ["Pork"],
+  lamb: ["Lamb"],
+  bacon: ["Bacon"],
+  egg: ["Eggs"],
+  milk: ["Milk"],
+  butter: ["Butter"],
+  flour: ["Plain Flour", "Flour"],
+  onion: ["Onion", "Onions"],
+  garlic: ["Garlic"],
+  lemon: ["Lemon"],
+  lime: ["Lime"],
+  spinach: ["Spinach"],
+  mushroom: ["Mushrooms"],
+  broccoli: ["Broccoli"],
+  bell_pepper: ["Bell Pepper", "Red Pepper"],
+  eggplant: ["Aubergine", "Eggplant"],
+  zucchini: ["Courgette", "Zucchini"],
+  cabbage: ["Cabbage"],
+  carrot: ["Carrot", "Carrots"],
+  peas: ["Peas"],
+  corn: ["Sweetcorn"],
+  avocado: ["Avocado"],
+  banana: ["Banana", "Bananas"],
+  apple: ["Apple", "Apples"],
+  blueberry: ["Blueberries"],
+  coconut_milk: ["Coconut Milk"],
+  stock: ["Chicken Stock", "Vegetable Stock"],
+  soy_sauce: ["Soy Sauce"],
+  honey: ["Honey"],
+  sugar: ["Caster Sugar", "Sugar"],
+  oats: ["Oats"],
+  bread: ["Bread"],
+  tortilla: ["Tortillas"],
+};
+
+function termsFor(id: string, fallback: string): string[] {
+  return MEALDB_TERMS[id] ?? [fallback];
+}
+
 const PANTRY_PRIORITY = [
   "chicken_breast", "chicken_thigh", "chicken", "beef", "pork", "lamb", "bacon", "sausage",
   "fish", "salmon", "tuna", "shrimp", "egg", "tofu", "beans", "chickpeas", "lentils",
@@ -397,7 +464,16 @@ export async function fetchPantryMatches(entries: PantryEntry[]): Promise<Recipe
   if (picks.length === 0) return [];
 
   const lists = await Promise.all(
-    picks.map(({ def }) => filterIds("i", def!.name, 6))
+    picks.map(async ({ def }) => {
+      const terms = termsFor(def!.id, def!.name);
+      const ids = new Set<string>();
+      for (const term of terms.slice(0, 3)) {
+        const found = await filterIds("i", term, 6);
+        found.forEach((id) => ids.add(id));
+        if (ids.size >= 8) break;
+      }
+      return Array.from(ids).slice(0, 8);
+    })
   );
 
   const ids = Array.from(new Set(lists.flat())).slice(0, 20);
