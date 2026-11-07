@@ -12,7 +12,7 @@ The interface is React + Capacitor; the recipe brain (parsing, scaling, matching
 
 ## Install it (sideload)
 
-The signed APK is at **`apk/Yummy-1.1.0.apk`** (24 MB, Android 8+).
+The signed APK is at **`apk/Yummy-1.2.0.apk`** (24 MB, Android 8+).
 
 1. Copy it to your phone (USB, Drive, `adb push` — whatever is easiest).
 2. Open it. Android will ask permission to install from that app — allow it.
@@ -23,10 +23,10 @@ The APK is a local build artifact and isn't committed to git — build it with t
 Or with a phone connected over USB:
 
 ```bash
-adb install apk/Yummy-1.1.0.apk
+adb install apk/Yummy-1.2.0.apk
 ```
 
-App id `app.yummy.recipes` · version 1.1.0 · universal APK with `arm64-v8a`, `armeabi-v7a` and `x86_64` native libraries.
+App id `app.yummy.recipes` · version 1.2.0 · universal APK with `arm64-v8a`, `armeabi-v7a` and `x86_64` native libraries.
 
 ### Sharing a recipe from Chrome
 
@@ -52,7 +52,14 @@ Open a recipe page → **Share** → **Yummy**. The share sheet target reads the
 ### Matching
 - Every recipe gets a **cook-now score** (`4/5 ready`), the missing items named, and an “Almost there” filter.
 - **78 built-in substitutions** (buttermilk → milk + lemon, shallot → onion, crème fraîche → sour cream…) offered only when you actually have the swap ingredients.
-- Ranking blends readiness, expiring food and cooking time.
+- **Honest relevance**: store-cupboard staples never make a recipe a “match” on their own. A dish has to use a lead ingredient, several pantry items, or be a simple/breakfast recipe — apple pie no longer appears because you happen to have an egg.
+- Ingredient families understand that chicken breast, thighs and whole chicken are all chicken.
+- Ranking blends how many real ingredients you have, match percentage, expiring food and cooking time. Anything that shares no core ingredients moves behind **Explore everything**.
+
+### Web matching
+- TheMealDB is queried with your actual pantry ingredients (`filter.php?i=…`), then each result is fetched in full and run through the same Rust matcher. Chicken + eggs now returns chicken curries, sandwiches, roasts and egg breakfasts — not random desserts.
+- Matched web recipes are cached on the phone for two hours, so the list keeps working offline.
+- A separate **Browse more from the web** rail keeps a broader, random selection for inspiration.
 
 ### Capture
 - **Web link** — Rust reads JSON-LD, microdata and OpenGraph (via CapacitorHttp so there are no CORS walls), then gives you an editable draft.

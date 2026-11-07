@@ -351,6 +351,54 @@ export async function fetchFeatured(): Promise<Recipe[]> {
   }
 }
 
+const PANTRY_PRIORITY = [
+  "chicken_breast", "chicken_thigh", "chicken", "beef", "pork", "lamb", "bacon", "sausage",
+  "fish", "salmon", "tuna", "shrimp", "egg", "tofu", "beans", "chickpeas", "lentils",
+  "pasta", "noodles", "rice", "potato", "sweet_potato", "tomato", "cheese", "mushroom",
+  "spinach", "broccoli", "cauliflower", "zucchini", "eggplant", "bell_pepper", "cucumber",
+  "lemon", "lime", "onion", "garlic", "carrot", "peas", "apple", "banana",
+];
+
+function priority(id: string): number {
+  const index = PANTRY_PRIORITY.indexOf(id);
+  return index === -1 ? 99 : index;
+}
+
+/**
+ * Ask TheMealDB for dishes that actually contain what's in the pantry:
+ * ingredient filter -> full recipe lookup. These join the match engine, so
+ * chicken + eggs yields chicken/egg dishes rather than random desserts.
+ */
+export async function fetchPantryMatches(entries: PantryEntry[]): Promise<Recipe[]> {
+  const picks = entries
+    .map((entry) => ({ entry, def: catalogById.get(entry.id) }))
+    .filter(({ def }) => !!def && !def.staple)
+    .sort((a, b) => priority(a.def!.id) - priority(b.def!.id))
+    .slice(0, 3);
+
+  if (picks.length === 0) return [];
+
+  const lists = await Promise.all(
+    picks.map(async ({ def }) => {
+      try {
+        const data = await httpJson<{ meals: MealDbSummary[] | null }>(
+          `${MEAL_API}/filter.php?i=${encodeURIComponent(def!.name)}`
+        );
+        return (data.meals ?? []).slice(0, 6).map((meal) => meal.idMeal);
+      } catch {
+        return [];
+      }
+    })
+  );
+
+  const ids = Array.from(new Set(lists.flat())).slice(0, 20);
+  if (ids.length === 0) return [];
+  const full = await Promise.all(ids.map(lookupMeal));
+  return full
+    .filter((meal): meal is MealDbMeal => !!meal && !!meal.strMeal)
+    .map(mealToRecipe);
+}
+
 export function recipeEmoji(recipe: Recipe): string {
   return recipe.emoji || "🍲";
 }

@@ -74,7 +74,7 @@ export function PantryScreen({
     () =>
       recipes.filter((recipe) => {
         const match = matches[recipe.id];
-        return match && match.total > 0 && match.score >= 80;
+        return match && match.total > 0 && match.score >= 80 && match.coreHave > 0;
       }).length,
     [matches, recipes]
   );

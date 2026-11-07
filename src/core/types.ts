@@ -105,6 +105,8 @@ export interface MatchResult {
   score: number;
   have: number;
   total: number;
+  coreHave: number;
+  coreTotal: number;
   missing: MissingItem[];
   short: MissingItem[];
   expiringUsed: string[];

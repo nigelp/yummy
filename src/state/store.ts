@@ -90,6 +90,9 @@ export interface YummyState {
   recipes: Recipe[];
   featured: Recipe[];
   featuredAt?: string;
+  pantryOnline: Recipe[];
+  onlineKey: string;
+  onlineAt?: string;
   plan: Record<string, string[]>;
   shopping: ShoppingItem[];
   settings: Settings;
@@ -116,6 +119,7 @@ export interface YummyState {
   clearShopping: () => void;
   setSettings: (patch: Partial<Settings>) => void;
   setFeatured: (recipes: Recipe[]) => void;
+  setPantryOnline: (recipes: Recipe[], key: string) => void;
   saveFeatured: (id: string) => void;
   resetApp: () => void;
 }
@@ -130,6 +134,9 @@ export const useApp = create<YummyState>()(
       recipes: seedRecipes,
       featured: [],
       featuredAt: undefined,
+      pantryOnline: [],
+      onlineKey: "",
+      onlineAt: undefined,
       plan: {},
       shopping: [],
       settings: {
@@ -207,6 +214,7 @@ export const useApp = create<YummyState>()(
         set((state) => ({
           recipes: [recipe, ...state.recipes.filter((r) => r.id !== recipe.id)],
           featured: state.featured.filter((r) => r.id !== recipe.id),
+          pantryOnline: state.pantryOnline.filter((r) => r.id !== recipe.id),
         })),
 
       updateRecipe: (id, patch) =>
@@ -344,6 +352,15 @@ export const useApp = create<YummyState>()(
         });
       },
 
+      setPantryOnline: (recipes, key) => {
+        const savedIds = new Set(get().recipes.map((r) => r.id));
+        set({
+          pantryOnline: recipes.filter((r) => !savedIds.has(r.id)),
+          onlineKey: key,
+          onlineAt: new Date().toISOString(),
+        });
+      },
+
       saveFeatured: (id) => {
         const found = get().featured.find((r) => r.id === id);
         if (!found) return;
@@ -357,6 +374,9 @@ export const useApp = create<YummyState>()(
           recipes: seedRecipes,
           featured: [],
           featuredAt: undefined,
+          pantryOnline: [],
+          onlineKey: "",
+          onlineAt: undefined,
           plan: {},
           shopping: [],
           customPantry: [],
@@ -379,6 +399,9 @@ export const useApp = create<YummyState>()(
         recipes: state.recipes,
         featured: state.featured,
         featuredAt: state.featuredAt,
+        pantryOnline: state.pantryOnline,
+        onlineKey: state.onlineKey,
+        onlineAt: state.onlineAt,
         plan: state.plan,
         shopping: state.shopping,
         settings: state.settings,
@@ -400,6 +423,9 @@ export const useApp = create<YummyState>()(
           seedVersion,
           recipes,
           featured: (saved.featured ?? current.featured).map(ensureRecipeMeta),
+          pantryOnline: (saved.pantryOnline ?? []).map(ensureRecipeMeta),
+          onlineKey: saved.onlineKey ?? "",
+          onlineAt: saved.onlineAt,
           customPantry: saved.customPantry ?? [],
           pantry: saved.pantry ?? {},
         };

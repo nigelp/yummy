@@ -156,6 +156,8 @@ pub struct MatchResult {
     pub score: i32,
     pub have: i32,
     pub total: i32,
+    pub core_have: i32,
+    pub core_total: i32,
     pub missing: Vec<MissingItem>,
     pub short: Vec<MissingItem>,
     pub expiring_used: Vec<String>,

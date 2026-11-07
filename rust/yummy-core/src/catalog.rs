@@ -85,6 +85,16 @@ pub fn cup_grams(id: Option<&str>) -> Option<f64> {
     item(id).and_then(|i| i.cup_grams)
 }
 
+/// Pantry items that should satisfy each other for matching purposes.
+pub fn family(id: &str) -> &'static [&'static str] {
+    match id {
+        "chicken" | "chicken_breast" | "chicken_thigh" => {
+            &["chicken", "chicken_breast", "chicken_thigh"]
+        }
+        _ => &[],
+    }
+}
+
 pub fn aisle_of(id: Option<&str>) -> String {
     id.and_then(item)
         .map(|i| i.aisle.clone())

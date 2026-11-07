@@ -104,6 +104,13 @@ function words(text: string): string[] {
     .filter((w) => w && !STOP.has(w));
 }
 
+const CHICKEN_FAMILY = ["chicken", "chicken_breast", "chicken_thigh"];
+
+function familyOf(id?: string): string[] {
+  if (id && CHICKEN_FAMILY.includes(id)) return CHICKEN_FAMILY;
+  return id ? [id] : [];
+}
+
 export function textKey(text: string): string {
   return words(text).join(" ");
 }
@@ -405,6 +412,8 @@ export function matchRecipes(
   const results = recipes.map((recipe) => {
     let total = 0;
     let have = 0;
+    let coreTotal = 0;
+    let coreHave = 0;
     const missing: MissingItem[] = [];
     const details: MatchResult["details"] = [];
     const expiringUsed: string[] = [];
@@ -417,13 +426,18 @@ export function matchRecipes(
         continue;
       }
       total += 1;
-      if (useStaples && def?.staple) {
+      const isStaple = !!(useStaples && def?.staple);
+      if (!isStaple) coreTotal += 1;
+      if (isStaple) {
         have += 1;
         details.push({ canonicalId: id, item: name, state: "staple" });
         continue;
       }
       const p =
         (id ? pantryMap.get(id) : undefined) ??
+        familyOf(id)
+          .map((candidate) => pantryMap.get(candidate))
+          .find(Boolean) ??
         (textKey(ing.item)
           ? pantry.find((entry) => {
               const name =
@@ -433,6 +447,7 @@ export function matchRecipes(
           : undefined);
       if (p) {
         have += 1;
+        if (!isStaple) coreHave += 1;
         if (p.daysLeft !== undefined && p.daysLeft <= 3) {
           expiringUsed.push(name);
         }
@@ -467,6 +482,8 @@ export function matchRecipes(
       score,
       have,
       total,
+      coreHave,
+      coreTotal,
       missing,
       short: [],
       expiringUsed,

@@ -67,6 +67,11 @@ fn pantry_for<'a>(
         if let Some(item) = pantry_ids.get(id) {
             return Some(*item);
         }
+        for alternative in catalog::family(id) {
+            if let Some(item) = pantry_ids.get(*alternative) {
+                return Some(*item);
+            }
+        }
     }
     let needle = catalog::key(&ing.item);
     if needle.is_empty() {
@@ -93,6 +98,8 @@ pub fn match_recipe(
 
     let mut total = 0i32;
     let mut have = 0i32;
+    let mut core_total = 0i32;
+    let mut core_have = 0i32;
     let mut missing: Vec<MissingItem> = Vec::new();
     let mut short: Vec<MissingItem> = Vec::new();
     let mut details: Vec<PantryStatus> = Vec::new();
@@ -129,6 +136,9 @@ pub fn match_recipe(
         }
 
         total += 1;
+        if !is_staple {
+            core_total += 1;
+        }
 
         if is_staple {
             have += 1;
@@ -143,6 +153,9 @@ pub fn match_recipe(
 
         if let Some(p) = pantry_item {
             have += 1;
+            if !is_staple {
+                core_have += 1;
+            }
             if let Some(days) = p.days_left {
                 if days <= 3 {
                     let friendly = if days <= 0 {
@@ -221,6 +234,8 @@ pub fn match_recipe(
         score,
         have,
         total,
+        core_have,
+        core_total,
         missing,
         short,
         expiring_used: expiring,
@@ -315,6 +330,48 @@ mod tests {
         let m = match_recipe(&r, &pantry, false, true);
         assert!(m.missing[0].sub.is_some());
         assert!(m.substitutable);
+    }
+
+    #[test]
+    fn chicken_family_matches_across_cuts() {
+        let r = Recipe {
+            id: "roast".into(),
+            servings: 4.0,
+            ingredients: vec![ing("1 whole chicken"), ing("2 tbsp olive oil")],
+            ..Default::default()
+        };
+        let pantry = vec![PantryItem {
+            id: "chicken_breast".into(),
+            ..Default::default()
+        }];
+        let m = match_recipe(&r, &pantry, true, true);
+        assert_eq!(m.core_have, 1);
+        assert_eq!(m.missing.len(), 0);
+    }
+
+    #[test]
+    fn staples_alone_do_not_make_a_match() {
+        let r = Recipe {
+            id: "dessert".into(),
+            servings: 2.0,
+            ingredients: vec![ing("200 g flour"), ing("100 g sugar"), ing("1 pinch of salt")],
+            ..Default::default()
+        };
+        let m = match_recipe(&r, &[], true, true);
+        assert_eq!(m.score, 100);
+        assert_eq!(m.core_total, 0);
+        assert_eq!(m.core_have, 0);
+
+        let r = Recipe {
+            id: "eggs".into(),
+            servings: 2.0,
+            ingredients: vec![ing("200 g flour"), ing("2 eggs")],
+            ..Default::default()
+        };
+        let pantry = vec![PantryItem { id: "egg".into(), ..Default::default() }];
+        let m = match_recipe(&r, &pantry, true, true);
+        assert_eq!(m.core_total, 1);
+        assert_eq!(m.core_have, 1);
     }
 
     #[test]

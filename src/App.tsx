@@ -61,6 +61,7 @@ export default function App() {
   const ready = useApp((s) => s.ready);
   const recipes = useApp((s) => s.recipes);
   const featured = useApp((s) => s.featured);
+  const pantryOnline = useApp((s) => s.pantryOnline);
   const toast = useApp((s) => s.toast);
   const setToast = useApp((s) => s.setToast);
 
@@ -71,7 +72,13 @@ export default function App() {
   const [captureUrl, setCaptureUrl] = useState<string | undefined>(undefined);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const allRecipes = useMemo(() => [...recipes, ...featured], [recipes, featured]);
+  const allRecipes = useMemo(() => {
+    const byId = new Map<string, Recipe>();
+    for (const recipe of [...recipes, ...featured, ...pantryOnline]) {
+      byId.set(recipe.id, recipe);
+    }
+    return Array.from(byId.values());
+  }, [recipes, featured, pantryOnline]);
   const { matches, loading } = useMatches(allRecipes);
 
   const selected = selectedId

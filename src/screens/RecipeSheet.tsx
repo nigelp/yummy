@@ -184,11 +184,13 @@ export function RecipeSheet({
             <ScoreRing score={match.score} size={48} />
             <div className="grow">
               <strong className="match-title">
-                {match.score >= 100
-                  ? "You can cook this right now"
-                  : match.score >= 60
-                    ? `Almost there — ${missing.length} to find`
-                    : `${missing.length} ingredients to pick up`}
+                {match.coreHave === 0
+                  ? "A browse idea — none of your pantry is in this yet"
+                  : match.score >= 100
+                    ? "You can cook this right now"
+                    : match.score >= 60
+                      ? `Almost there — ${missing.length} to find`
+                      : `${missing.length} ingredients to pick up`}
               </strong>
               <p className="tiny muted" style={{ marginTop: 2 }}>
                 {match.have} of {match.total} ingredients in your kitchen

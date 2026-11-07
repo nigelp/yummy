@@ -123,6 +123,7 @@ export function MealCard({
         <span className="tiny faint">
           {recipe.timeMin ? `${formatTime(recipe.timeMin)} · ` : ""}
           {recipe.cuisine ?? "Home cooking"}
+          {recipe.source === "featured" ? " · web" : ""}
         </span>
         {match && <ScorePill score={match.score} />}
       </div>
