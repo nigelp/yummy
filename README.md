@@ -12,7 +12,7 @@ The interface is React + Capacitor; the recipe brain (parsing, scaling, matching
 
 ## Install it (sideload)
 
-The signed APK is at **`apk/Yummy-1.2.2.apk`** (24 MB, Android 8+).
+The signed APK is at **`apk/Yummy-1.2.3.apk`** (24 MB, Android 8+).
 
 1. Copy it to your phone (USB, Drive, `adb push` — whatever is easiest).
 2. Open it. Android will ask permission to install from that app — allow it.
@@ -23,10 +23,10 @@ The APK is a local build artifact and isn't committed to git — build it with t
 Or with a phone connected over USB:
 
 ```bash
-adb install apk/Yummy-1.2.2.apk
+adb install apk/Yummy-1.2.3.apk
 ```
 
-App id `app.yummy.recipes` · version 1.2.2 · universal APK with `arm64-v8a`, `armeabi-v7a` and `x86_64` native libraries.
+App id `app.yummy.recipes` · version 1.2.3 · universal APK with `arm64-v8a`, `armeabi-v7a` and `x86_64` native libraries.
 
 ### Sharing a recipe from Chrome
 
@@ -82,6 +82,9 @@ Open a recipe page → **Share** → **Yummy**. The share sheet target reads the
 - Weekly meal plan with a day-by-day picker; “build shopping list” gathers the whole week.
 - Featured online recipes from TheMealDB, matched against your pantry, cached for offline reading.
 - One-handed bottom dock, soft pastel design system, bundled Fraunces + Nunito (no font downloads).
+
+### Saving web recipes
+- Tapping **Save this recipe** on a featured or pantry-matched web dish moves it into your library as a normal web recipe. The sheet switches to **Start cooking** immediately, and the recipe is fully editable (photo, notes, favourites).
 
 ### Privacy
 No accounts, no analytics, no cloud. The library, pantry, plan and lists live in a JSON file in the app's private data directory on the phone. Only the optional “fresh from the web” row touches the network.

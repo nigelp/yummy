@@ -59,7 +59,8 @@ export function RecipeSheet({
     };
   }, [recipe, servings, settings.system]);
 
-  const isSaved = recipe.source !== "featured";
+  const inLibrary = useApp((s) => s.recipes.some((r) => r.id === recipe.id));
+  const isSaved = inLibrary || recipe.source !== "featured";
   const notes = useMemo(() => recipe.notes ?? [], [recipe.notes]);
   const missing = match?.missing ?? [];
   const days = weekDays(7);

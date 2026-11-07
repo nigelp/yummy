@@ -362,9 +362,10 @@ export const useApp = create<YummyState>()(
       },
 
       saveFeatured: (id) => {
-        const found = get().featured.find((r) => r.id === id);
+        // Featured rail and pantry-matched web recipes are both saveable.
+        const found = [...get().featured, ...get().pantryOnline].find((r) => r.id === id);
         if (!found) return;
-        get().addRecipe({ ...found, source: "featured" });
+        get().addRecipe({ ...found, source: "web" });
         set({ toast: "Saved to your library" });
       },
 
