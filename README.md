@@ -1,5 +1,7 @@
 # 🍑 Yummy
 
+[![Latest release](https://img.shields.io/github/v/release/nigelp/yummy?label=download%20APK&color=FF9E74)](https://github.com/nigelp/yummy/releases/latest)
+
 A pastel, pantry-first recipe companion for Android. Pick what's already in your kitchen, get honest meal matches, scale them for the table, and cook with big, calm step cards — all offline, all on your phone.
 
 The interface is React + Capacitor; the recipe brain (parsing, scaling, matching, web extraction) is **Rust**, compiled into the APK as `libyummy_core.so` and called over JNI.
@@ -12,7 +14,7 @@ The interface is React + Capacitor; the recipe brain (parsing, scaling, matching
 
 ## Install it (sideload)
 
-The signed APK is at **`apk/Yummy-1.2.5.apk`** (24 MB, Android 8+).
+The signed APK is attached to **[Yummy v1.2.5](https://github.com/nigelp/yummy/releases/tag/v1.2.5)** — [direct download](https://github.com/nigelp/yummy/releases/download/v1.2.5/Yummy-1.2.5.apk) (24 MB, Android 8+). It is also at `apk/Yummy-1.2.5.apk` in a local build.
 
 1. Copy it to your phone (USB, Drive, `adb push` — whatever is easiest).
 2. Open it. Android will ask permission to install from that app — allow it.
