@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useDragControls } from "framer-motion";
 import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 import { useEffect } from "react";
@@ -17,6 +17,8 @@ export function Sheet({
   full?: boolean;
   label?: string;
 }) {
+  const dragControls = useDragControls();
+
   useEffect(() => {
     if (!open) return;
     const onKey = (event: KeyboardEvent) => {
@@ -54,13 +56,22 @@ export function Sheet({
             exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 320, damping: 34 }}
             drag={full ? false : "y"}
+            dragControls={dragControls}
+            dragListener={false}
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={{ top: 0, bottom: 0.4 }}
             onDragEnd={(_, info) => {
               if (info.offset.y > 120 || info.velocity.y > 700) onClose();
             }}
           >
-            {!full && <div className="sheet-grip" />}
+            {!full && (
+              <div
+                className="sheet-grip-zone"
+                onPointerDown={(event) => dragControls.start(event)}
+              >
+                <div className="sheet-grip" />
+              </div>
+            )}
             {children}
           </motion.div>
         </>

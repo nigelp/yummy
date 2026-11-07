@@ -12,7 +12,7 @@ The interface is React + Capacitor; the recipe brain (parsing, scaling, matching
 
 ## Install it (sideload)
 
-The signed APK is at **`apk/Yummy-1.2.4.apk`** (24 MB, Android 8+).
+The signed APK is at **`apk/Yummy-1.2.5.apk`** (24 MB, Android 8+).
 
 1. Copy it to your phone (USB, Drive, `adb push` — whatever is easiest).
 2. Open it. Android will ask permission to install from that app — allow it.
@@ -23,10 +23,10 @@ The APK is a local build artifact and isn't committed to git — build it with t
 Or with a phone connected over USB:
 
 ```bash
-adb install apk/Yummy-1.2.4.apk
+adb install apk/Yummy-1.2.5.apk
 ```
 
-App id `app.yummy.recipes` · version 1.2.4 · universal APK with `arm64-v8a`, `armeabi-v7a` and `x86_64` native libraries.
+App id `app.yummy.recipes` · version 1.2.5 · universal APK with `arm64-v8a`, `armeabi-v7a` and `x86_64` native libraries.
 
 ### Sharing a recipe from Chrome
 

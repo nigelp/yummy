@@ -806,3 +806,17 @@ textarea:focus-visible {
   opacity: 0.5;
   cursor: default;
 }
+
+/* Only the grip drags the sheet; content scrolls normally on touch. */
+.sheet-grip-zone {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 4px;
+  margin: -2px 0 2px;
+  touch-action: none;
+  cursor: grab;
+}
+
+.sheet-grip-zone .sheet-grip {
+  margin: 0;
+}
