@@ -285,70 +285,88 @@ interface MealDbSummary {
   strMealThumb?: string;
 }
 
+/** TheMealDB sometimes returns an object (paywall notice) instead of an array. */
+function mealList(value: unknown): MealDbSummary[] {
+  if (Array.isArray(value)) return value as MealDbSummary[];
+  if (value && typeof value === "object") {
+    const meals = (value as { meals?: unknown }).meals;
+    if (Array.isArray(meals)) return meals as MealDbSummary[];
+  }
+  return [];
+}
+
 async function lookupMeal(id: string): Promise<MealDbMeal | null> {
   try {
-    const data = await httpJson<{ meals: MealDbMeal[] | null }>(
+    const data = await httpJson<{ meals?: unknown }>(
       `${MEAL_API}/lookup.php?i=${encodeURIComponent(id)}`
     );
-    return data.meals?.[0] ?? null;
+    const first = mealList(data)[0] as unknown as MealDbMeal | undefined;
+    return first && first.strMeal ? first : null;
   } catch {
     return null;
   }
 }
 
-async function categoryMeals(category: string, limit: number): Promise<MealDbMeal[]> {
+async function filterIds(
+  kind: "c" | "a" | "i",
+  value: string,
+  limit: number
+): Promise<string[]> {
   try {
-    const data = await httpJson<{ meals: MealDbSummary[] | null }>(
-      `${MEAL_API}/filter.php?c=${encodeURIComponent(category)}`
+    const data = await httpJson<{ meals?: unknown }>(
+      `${MEAL_API}/filter.php?${kind}=${encodeURIComponent(value)}`
     );
-    const ids = (data.meals ?? []).slice(0, limit).map((meal) => meal.idMeal);
-    const full = await Promise.all(ids.map(lookupMeal));
-    return full.filter((meal): meal is MealDbMeal => !!meal && !!meal.strMeal);
+    return mealList(data)
+      .filter((meal) => !!meal.idMeal && !!meal.strMeal)
+      .slice(0, limit)
+      .map((meal) => meal.idMeal);
   } catch {
     return [];
   }
 }
 
+async function fullMeals(
+  kind: "c" | "a" | "i",
+  value: string,
+  limit: number
+): Promise<MealDbMeal[]> {
+  const ids = await filterIds(kind, value, limit);
+  const full = await Promise.all(ids.map(lookupMeal));
+  return full.filter((meal): meal is MealDbMeal => !!meal && !!meal.strMeal);
+}
+
 /**
- * TheMealDB gives us a genuinely varied pool: its random selection plus a few
- * hand-picked categories so breakfast, lighter meals and desserts all show up.
- * Pantry relevance is applied afterwards by the Rust matcher.
+ * Free TheMealDB lists only — no randomselection, which is now patron-only.
+ * A handful of categories and areas gives a genuinely mixed rail.
  */
 export async function fetchFeatured(): Promise<Recipe[]> {
-  try {
-    const pool: MealDbMeal[] = [];
-    const seen = new Set<string>();
-    const push = (meal: MealDbMeal | null | undefined) => {
-      if (!meal || !meal.strMeal || seen.has(meal.idMeal)) return;
-      seen.add(meal.idMeal);
-      pool.push(meal);
-    };
+  const pool: MealDbMeal[] = [];
+  const seen = new Set<string>();
+  const push = (meal: MealDbMeal | null | undefined) => {
+    if (!meal || !meal.strMeal || seen.has(meal.idMeal)) return;
+    seen.add(meal.idMeal);
+    pool.push(meal);
+  };
 
-    const [random, breakfast, pasta, seafood] = await Promise.all([
-      httpJson<{ meals: MealDbMeal[] | null }>(`${MEAL_API}/randomselection.php`).catch(
-        () => ({ meals: null as MealDbMeal[] | null })
-      ),
-      categoryMeals("Breakfast", 3),
-      categoryMeals("Pasta", 2),
-      categoryMeals("Seafood", 2),
-    ]);
+  const groups = await Promise.all([
+    fullMeals("c", "Breakfast", 3),
+    fullMeals("c", "Pasta", 2),
+    fullMeals("c", "Seafood", 2),
+    fullMeals("c", "Vegetarian", 2),
+    fullMeals("a", "Italian", 2),
+    fullMeals("a", "Thai", 2),
+  ]);
+  groups.forEach((meals) => meals.forEach(push));
 
-    (random.meals ?? []).forEach(push);
-    breakfast.forEach(push);
-    pasta.forEach(push);
-    seafood.forEach(push);
-
-    if (pool.length === 0) {
-      const fallback = await httpJson<{ meals: MealDbMeal[] | null }>(
-        `${MEAL_API}/search.php?s=`
-      ).catch(() => ({ meals: null as MealDbMeal[] | null }));
-      (fallback.meals ?? []).forEach(push);
-    }
-
-    return pool.slice(0, 18).map(mealToRecipe);
-  } catch {
-    return [];
+  if (pool.length === 0) {
+    const fallback = await fullMeals("c", "Chicken", 4);
+    fallback.forEach(push);
   }
+  if (pool.length === 0) {
+    throw new Error("TheMealDB returned no recipes");
+  }
+
+  return pool.slice(0, 18).map(mealToRecipe);
 }
 
 const PANTRY_PRIORITY = [
@@ -379,16 +397,7 @@ export async function fetchPantryMatches(entries: PantryEntry[]): Promise<Recipe
   if (picks.length === 0) return [];
 
   const lists = await Promise.all(
-    picks.map(async ({ def }) => {
-      try {
-        const data = await httpJson<{ meals: MealDbSummary[] | null }>(
-          `${MEAL_API}/filter.php?i=${encodeURIComponent(def!.name)}`
-        );
-        return (data.meals ?? []).slice(0, 6).map((meal) => meal.idMeal);
-      } catch {
-        return [];
-      }
-    })
+    picks.map(({ def }) => filterIds("i", def!.name, 6))
   );
 
   const ids = Array.from(new Set(lists.flat())).slice(0, 20);

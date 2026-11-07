@@ -40,6 +40,7 @@ export function DiscoverScreen({
   const setPantryOnline = useApp((s) => s.setPantryOnline);
   const pantry = useApp((s) => s.pantry);
   const [fetching, setFetching] = useState(false);
+  const [featureError, setFeatureError] = useState<string | null>(null);
   const [almostOnly, setAlmostOnly] = useState(false);
   const [meal, setMeal] = useState<MealFilter>("all");
   const [tags, setTags] = useState<Set<string>>(new Set());
@@ -51,9 +52,20 @@ export function DiscoverScreen({
   const refresh = async (force = false) => {
     if (!force && !navigator.onLine) return;
     setFetching(true);
+    setFeatureError(null);
     try {
       const fresh = await fetchFeatured();
-      if (fresh.length) setFeatured(fresh);
+      if (fresh.length) {
+        setFeatured(fresh);
+      } else {
+        setFeatureError("TheMealDB didn't return any recipes just now.");
+      }
+    } catch {
+      setFeatureError(
+        navigator.onLine
+          ? "Couldn't reach TheMealDB. Give it a moment and try again."
+          : "You're offline — saved recipes still work."
+      );
     } finally {
       setFetching(false);
     }
@@ -455,10 +467,24 @@ export function DiscoverScreen({
       ) : featuredVisible.length === 0 ? (
         <div className="card" style={{ padding: 16 }}>
           <p className="small muted" style={{ lineHeight: 1.5 }}>
-            {featured.length > 0
-              ? "No web recipes for that meal type in the current batch — refresh for another handful."
-              : "No internet, no problem — your saved recipes still work. Featured ideas appear here when you're back online."}
+            {featureError
+              ? featureError
+              : featured.length > 0
+                ? "No web recipes for that meal type in the current batch — refresh for another handful."
+                : !navigator.onLine
+                  ? "You're offline — saved recipes still work."
+                  : "Nothing new right now — tap refresh to ask TheMealDB again."}
           </p>
+          {(featureError || featured.length === 0) && (
+            <button
+              className="secondary-btn"
+              style={{ marginTop: 10 }}
+              disabled={fetching}
+              onClick={() => void refresh(true)}
+            >
+              {fetching ? "Trying…" : "Try again"}
+            </button>
+          )}
         </div>
       ) : (
         <div className="rail">

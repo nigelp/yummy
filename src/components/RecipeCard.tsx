@@ -159,7 +159,7 @@ export function FeaturedCard({
         <strong>{recipe.title}</strong>
         <span>
           {recipe.timeMin ? `${formatTime(recipe.timeMin)} · ` : ""}
-          {recipe.cuisine ?? "Dinner"}
+          {recipe.cuisine ?? "Home cooking"}
         </span>
       </div>
     </button>
