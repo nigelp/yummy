@@ -7,6 +7,7 @@ import { Art } from "../components/Art";
 import { Sheet, SheetHead, ScoreRing, Segmented, Stepper } from "../components/UI";
 import { formatTime, relativeDay, weekDays } from "../lib/format";
 import { fileToRecipePhoto } from "../lib/photo";
+import { shareRecipe } from "../lib/share";
 
 export function RecipeSheet({
   recipe,
@@ -117,12 +118,10 @@ export function RecipeSheet({
           <button
             className="icon-btn glass"
             onClick={() => {
-              const text = `${recipe.title} — ${recipe.sourceUrl ?? "saved in Yummy"}`;
-              if (navigator.share) void navigator.share({ title: recipe.title, text });
-              else {
-                void navigator.clipboard?.writeText(text);
-                setToast("Link copied");
-              }
+              void shareRecipe(recipe).then((outcome) => {
+                if (outcome === "copied") setToast("Link copied");
+                else if (outcome === "failed") setToast("Couldn't share that recipe");
+              });
             }}
             aria-label="Share recipe"
           >
@@ -168,6 +167,20 @@ export function RecipeSheet({
             </span>
           )}
         </div>
+
+        {recipe.videoUrl && (
+          <a
+            className="video-link"
+            href={recipe.videoUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <span className="video-play small">
+              <Icon name="play" size={11} fill />
+            </span>
+            Watch the video
+          </a>
+        )}
 
         {recipe.warnings && recipe.warnings.length > 0 && (
           <div className="warn-card">

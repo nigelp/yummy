@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { coreCall, extractFromUrl, normalizeRecipe, recognizePhoto } from "../core/api";
+import { coreCall, extractFromUrl, isInstagramUrl, normalizeRecipe, recipeFromCaption, recognizePhoto } from "../core/api";
 import type { Ingredient, Recipe } from "../core/types";
 import { useApp } from "../state/store";
 import { Icon } from "../components/Icon";
 import { Sheet, SheetHead, Stepper } from "../components/UI";
 import { PhotoPicker } from "../components/PhotoPicker";
 
-type Mode = "choose" | "link" | "draft";
+type Mode = "choose" | "link" | "caption" | "draft";
 
 function blankRecipe(servings: number): Recipe {
   return {
@@ -54,6 +54,7 @@ export function CaptureSheet({
 
   const [mode, setMode] = useState<Mode>("choose");
   const [url, setUrl] = useState("");
+  const [captionText, setCaptionText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState<Recipe | null>(null);
@@ -63,6 +64,7 @@ export function CaptureSheet({
   const [ingredientsText, setIngredientsText] = useState("");
   const [stepsText, setStepsText] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
+  const screenshotInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -71,6 +73,7 @@ export function CaptureSheet({
     setError(null);
     setLoading(false);
     setDraft(null);
+    setCaptionText("");
   }, [open, initialUrl]);
 
   const startDraft = (recipe: Recipe) => {
@@ -91,6 +94,19 @@ export function CaptureSheet({
       startDraft(recipe);
     } catch (err) {
       setError(err instanceof Error ? err.message : "That page wouldn't give up its recipe.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const readCaption = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const recipe = await recipeFromCaption(captionText, url.trim() || undefined);
+      startDraft(recipe);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "We couldn't read that caption.");
     } finally {
       setLoading(false);
     }
@@ -179,24 +195,58 @@ export function CaptureSheet({
               <Icon name="chevronRight" size={17} className="faint" />
             </button>
 
+            <button
+              className="capture-option"
+              onClick={() => {
+                setMode("link");
+                setUrl("");
+                setError(null);
+              }}
+            >
+              <span className="emoji" style={{ background: "var(--rose-soft)" }}>
+                📸
+              </span>
+              <div className="grow">
+                <h3>Instagram post</h3>
+                <p>Paste a post link — we'll read its caption. Screenshots work too.</p>
+              </div>
+              <Icon name="chevronRight" size={17} className="faint" />
+            </button>
+
             <label className="capture-option" style={{ cursor: "pointer" }}>
               <span className="emoji" style={{ background: "var(--butter-soft)" }}>
                 📷
               </span>
               <div className="grow">
-                <h3>Scan a page</h3>
-                <p>Snap a cookbook or handwritten card. Read on-device.</p>
+                <h3>Photo or screenshot</h3>
+                <p>Snap a cookbook, or pick a screenshot from your gallery. Read on-device.</p>
               </div>
               <Icon name="chevronRight" size={17} className="faint" />
               <input
                 ref={fileInput}
                 type="file"
                 accept="image/*"
-                capture="environment"
                 hidden
                 onChange={(event) => void scanPhoto(event.target.files?.[0])}
               />
             </label>
+
+            <button
+              className="capture-option"
+              onClick={() => {
+                setMode("caption");
+                setError(null);
+              }}
+            >
+              <span className="emoji" style={{ background: "var(--pistachio-soft)" }}>
+                📝
+              </span>
+              <div className="grow">
+                <h3>Paste a caption</h3>
+                <p>Copy the text from Instagram or a post — no camera needed.</p>
+              </div>
+              <Icon name="chevronRight" size={17} className="faint" />
+            </button>
 
             <button
               className="capture-option"
@@ -221,7 +271,8 @@ export function CaptureSheet({
           )}
 
           <p className="tiny faint center" style={{ marginTop: 18, lineHeight: 1.5 }}>
-            On your phone, sharing a page from Chrome sends it straight here.
+            On your phone, sharing a page from Chrome or a post from Instagram sends it straight
+            here.
           </p>
         </>
       )}
@@ -229,18 +280,32 @@ export function CaptureSheet({
       {mode === "link" && (
         <>
           <div className="field">
-            <label>Recipe link</label>
+            <label>{isInstagramUrl(url) ? "Instagram post link" : "Recipe link"}</label>
             <input
               className="input"
-              placeholder="https://…"
+              placeholder={isInstagramUrl(url) ? "https://www.instagram.com/p/…" : "https://…"}
               value={url}
               autoFocus
               onChange={(event) => setUrl(event.target.value)}
               onKeyDown={(event) => event.key === "Enter" && !loading && void fetchLink()}
             />
           </div>
+          {isInstagramUrl(url) && (
+            <div className="ig-hint">
+              <Icon name="sparkle" size={14} />
+              <span>
+                We'll try to read the public caption. Instagram sometimes hides it from other
+                apps — if that happens, paste the caption or choose a screenshot from your
+                gallery.
+              </span>
+            </div>
+          )}
           <button className="primary-btn" disabled={loading || !url.trim()} onClick={() => void fetchLink()}>
-            {loading ? "Reading the recipe…" : "Read this recipe"}
+            {loading
+              ? isInstagramUrl(url)
+                ? "Reading the caption…"
+                : "Reading the recipe…"
+              : "Read this recipe"}
             {!loading && <Icon name="arrowRight" size={16} />}
           </button>
           {loading && (
@@ -256,8 +321,86 @@ export function CaptureSheet({
               <span>{error}</span>
             </div>
           )}
+          {isInstagramUrl(url) && (
+            <>
+              <button
+                className="secondary-btn"
+                style={{ marginTop: 10 }}
+                onClick={() => {
+                  setMode("caption");
+                  setError(null);
+                }}
+              >
+                <Icon name="pen" size={16} /> Paste the caption instead
+              </button>
+              <button
+                className="secondary-btn"
+                style={{ marginTop: 8 }}
+                onClick={() => screenshotInput.current?.click()}
+              >
+                <Icon name="camera" size={16} /> Choose a screenshot from the gallery
+              </button>
+              <input
+                ref={screenshotInput}
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={(event) => void scanPhoto(event.target.files?.[0])}
+              />
+            </>
+          )}
           <button className="ghost-btn" style={{ marginTop: 12 }} onClick={() => { setMode("choose"); setError(null); }}>
             Try another way
+          </button>
+        </>
+      )}
+
+      {mode === "caption" && (
+        <>
+          {url.trim() && (
+            <div className="source-chip">
+              <Icon name="link" size={12} />{" "}
+              {url.replace(/^https?:\/\/(www\.)?/, "").slice(0, 46)}
+            </div>
+          )}
+          <div className="field">
+            <label>Caption text</label>
+            <textarea
+              className="input"
+              rows={9}
+              autoFocus
+              placeholder="Paste the post caption here…"
+              value={captionText}
+              onChange={(event) => setCaptionText(event.target.value)}
+            />
+          </div>
+          <p className="tiny muted" style={{ marginBottom: 14, lineHeight: 1.45 }}>
+            In Instagram: open the post, tap the ⋯ menu, choose <strong>Copy caption</strong> (or
+            select the text), then paste it above. No camera or account needed.
+          </p>
+          {error && (
+            <div className="error-card">
+              <Icon name="sparkle" size={15} />
+              <span>{error}</span>
+            </div>
+          )}
+          <button
+            className="primary-btn"
+            disabled={loading || !captionText.trim()}
+            onClick={() => void readCaption()}
+          >
+            {loading ? "Reading the caption…" : "Import this caption"}
+            {!loading && <Icon name="arrowRight" size={16} />}
+          </button>
+          <button
+            className="ghost-btn"
+            style={{ marginTop: 8 }}
+            onClick={() => {
+              setMode("choose");
+              setError(null);
+            }}
+          >
+            Back
           </button>
         </>
       )}

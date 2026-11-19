@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { match as matchRecipes, pickUrl } from "./core/api";
 import { isNative, ShareReceiver } from "./core/native";
-import type { MatchResult, Recipe } from "./core/types";
+import type { DiscoverSeed, FindMode, MatchResult, MealType, Recipe } from "./core/types";
 import { useApp } from "./state/store";
+import { FindScreen } from "./screens/FindScreen";
 import { PantryScreen } from "./screens/PantryScreen";
 import { DiscoverScreen } from "./screens/DiscoverScreen";
 import { LibraryScreen } from "./screens/LibraryScreen";
@@ -13,17 +14,19 @@ import { CookMode } from "./screens/CookMode";
 import { CaptureSheet } from "./screens/CaptureSheet";
 import { SettingsSheet } from "./screens/SettingsSheet";
 import { Icon } from "./components/Icon";
-import { Toast } from "./components/UI";
+import { Sheet, Toast } from "./components/UI";
 
-type Tab = "pantry" | "discover" | "library" | "list" | "plan";
+type Tab = "find" | "discover" | "library" | "list" | "plan";
 
 const TABS: Array<{ id: Tab; label: string; icon: string }> = [
-  { id: "pantry", label: "Pantry", icon: "basket" },
+  { id: "find", label: "Find", icon: "search" },
   { id: "discover", label: "Discover", icon: "sparkle" },
   { id: "library", label: "Library", icon: "book" },
   { id: "list", label: "List", icon: "list" },
   { id: "plan", label: "Plan", icon: "calendar" },
 ];
+
+const MEAL_TAGS = new Set<string>(["breakfast", "lunch", "dinner", "dessert", "snack"]);
 
 function useMatches(recipes: Recipe[]): {
   matches: Record<string, MatchResult>;
@@ -65,7 +68,12 @@ export default function App() {
   const toast = useApp((s) => s.toast);
   const setToast = useApp((s) => s.setToast);
 
-  const [tab, setTab] = useState<Tab>("pantry");
+  const [tab, setTab] = useState<Tab>("find");
+  const [findMode, setFindMode] = useState<FindMode>("tags");
+  const [findTags, setFindTags] = useState<string[]>([]);
+  const [findQuery, setFindQuery] = useState("");
+  const [discoverSeed, setDiscoverSeed] = useState<DiscoverSeed | undefined>(undefined);
+  const [pantryOpen, setPantryOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [cookId, setCookId] = useState<string | null>(null);
   const [captureOpen, setCaptureOpen] = useState(false);
@@ -130,6 +138,27 @@ export default function App() {
     setSelectedId(recipe.id);
   };
 
+  const goToTab = (next: Tab) => {
+    // A seed belongs to one handoff only. Leaving Discover (or opening it
+    // from anywhere other than Find) starts from the normal Discover state.
+    setDiscoverSeed(undefined);
+    setTab(next);
+  };
+
+  const openDiscover = () => {
+    const seed =
+      tab === "find" && (findQuery.trim() || findTags.length > 0)
+        ? {
+            query: findQuery,
+            meals: findTags.filter((tag): tag is MealType => MEAL_TAGS.has(tag)),
+            tags: findTags.filter((tag) => !MEAL_TAGS.has(tag)),
+            nonce: Date.now(),
+          }
+        : undefined;
+    setDiscoverSeed(seed);
+    setTab("discover");
+  };
+
   if (!ready) {
     return (
       <div className="splash">
@@ -146,19 +175,29 @@ export default function App() {
     <>
       <div className="app-shell">
         <div className="app-frame">
-          {tab === "pantry" && (
-            <PantryScreen
+          {tab === "find" && (
+            <FindScreen
               matches={matches}
+              mode={findMode}
+              onModeChange={setFindMode}
+              query={findQuery}
+              onQueryChange={setFindQuery}
+              selected={findTags}
+              onSelectedChange={setFindTags}
+              onOpen={openRecipe}
               onSettings={() => setSettingsOpen(true)}
-              onFindDinner={() => setTab("discover")}
+              onManagePantry={() => setPantryOpen(true)}
+              onOpenDiscover={openDiscover}
+              onOpenLibrary={() => goToTab("library")}
             />
           )}
           {tab === "discover" && (
             <DiscoverScreen
+              seed={discoverSeed}
               matches={matches}
               loading={loading}
               onOpen={openRecipe}
-              onGoPantry={() => setTab("pantry")}
+              onGoPantry={() => setPantryOpen(true)}
             />
           )}
           {tab === "library" && (
@@ -179,7 +218,7 @@ export default function App() {
               <button
                 key={item.id}
                 className={`dock-item ${tab === item.id ? "active" : ""}`}
-                onClick={() => setTab(item.id)}
+                onClick={() => (item.id === "discover" ? openDiscover() : goToTab(item.id))}
                 aria-current={tab === item.id}
               >
                 <Icon name={item.icon} size={20} strokeWidth={tab === item.id ? 2 : 1.7} />
@@ -199,11 +238,24 @@ export default function App() {
             setSelectedId(null);
             setCookId(recipe.id);
           }}
-          onPlanDone={() => setTab("plan")}
+          onPlanDone={() => goToTab("plan")}
         />
       )}
 
       {cooking && <CookMode recipe={cooking} onClose={() => setCookId(null)} />}
+
+      <Sheet open={pantryOpen} onClose={() => setPantryOpen(false)} full label="My pantry">
+        <PantryScreen
+          matches={matches}
+          embedded
+          onBack={() => setPantryOpen(false)}
+          onSettings={() => setSettingsOpen(true)}
+          onFindDinner={() => {
+            setPantryOpen(false);
+            goToTab("discover");
+          }}
+        />
+      </Sheet>
 
       <CaptureSheet
         open={captureOpen}
@@ -213,7 +265,7 @@ export default function App() {
           setCaptureUrl(undefined);
         }}
         onSaved={(recipe) => {
-          setTab("library");
+          goToTab("library");
           setSelectedId(recipe.id);
         }}
       />

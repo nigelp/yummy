@@ -3,7 +3,14 @@ import { scale } from "../core/api";
 import type { Recipe, ScaleResult } from "../core/types";
 import { useApp } from "../state/store";
 import { Icon } from "../components/Icon";
-import { Sheet } from "../components/UI";
+import { Sheet, SheetHead } from "../components/UI";
+
+const QUICK_NOTES = [
+  "Needed more salt",
+  "Doubled the sauce",
+  "Kids loved it",
+  "Took longer than planned",
+];
 
 interface CookTimer {
   id: number;
@@ -53,9 +60,12 @@ function mmss(totalSeconds: number): string {
 export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => void }) {
   const settings = useApp((s) => s.settings);
   const logCook = useApp((s) => s.logCook);
+  const addNote = useApp((s) => s.addNote);
   const setToast = useApp((s) => s.setToast);
   const [step, setStep] = useState(0);
   const [finished, setFinished] = useState(false);
+  const [logOpen, setLogOpen] = useState(false);
+  const [logNote, setLogNote] = useState("");
   const [showIngredients, setShowIngredients] = useState(false);
   const [scaled, setScaled] = useState<ScaleResult | null>(null);
   const [checked, setChecked] = useState<Set<number>>(new Set());
@@ -163,17 +173,13 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
             delicious.
           </h1>
           <p className="sub" style={{ marginTop: 10 }}>
-            {recipe.title} · {recipe.servings} servings. Add a note about what you'd change next
-            time from the recipe page.
+            {recipe.title} · {recipe.servings} servings. Add a note while it's fresh — or just
+            log the cook.
           </p>
           <button
             className="primary-btn"
             style={{ marginTop: 26 }}
-            onClick={() => {
-              logCook(recipe.id);
-              setToast("Logged — enjoy every bite");
-              onClose();
-            }}
+            onClick={() => setLogOpen(true)}
           >
             <Icon name="check" size={17} /> Log this cook
           </button>
@@ -263,6 +269,65 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
           </div>
         </>
       )}
+
+      <Sheet open={logOpen} onClose={() => setLogOpen(false)} label="Log this cook">
+        <SheetHead
+          title="How did it go?"
+          subtitle={`${recipe.title} · add a note while it's fresh`}
+          onClose={() => setLogOpen(false)}
+        />
+        <div className="field">
+          <label>Anything to remember?</label>
+          <textarea
+            className="input"
+            rows={3}
+            autoFocus
+            placeholder="Less sugar next time, the sauce needed longer…"
+            value={logNote}
+            onChange={(event) => setLogNote(event.target.value)}
+          />
+        </div>
+        <div className="row wrap gap-6" style={{ marginBottom: 14 }}>
+          {QUICK_NOTES.map((quick) => (
+            <button
+              key={quick}
+              type="button"
+              className="chip soft"
+              onClick={() =>
+                setLogNote((current) => (current.trim() ? `${current.trim()}\n${quick}` : quick))
+              }
+            >
+              {quick}
+            </button>
+          ))}
+        </div>
+        <button
+          className="primary-btn"
+          onClick={() => {
+            logCook(recipe.id);
+            if (logNote.trim()) addNote(recipe.id, logNote.trim());
+            setToast(
+              logNote.trim() ? "Logged with your note" : "Logged — enjoy every bite"
+            );
+            setLogOpen(false);
+            onClose();
+          }}
+        >
+          <Icon name="check" size={17} /> Save cook{logNote.trim() ? " + note" : ""}
+        </button>
+        <button
+          className="ghost-btn"
+          style={{ marginTop: 8 }}
+          onClick={() => {
+            logCook(recipe.id);
+            setToast("Logged — enjoy every bite");
+            setLogOpen(false);
+            onClose();
+          }}
+        >
+          Just log it
+        </button>
+      </Sheet>
     </div>
   );
 }

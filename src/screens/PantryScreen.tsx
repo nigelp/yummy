@@ -25,10 +25,14 @@ export function PantryScreen({
   matches,
   onSettings,
   onFindDinner,
+  onBack,
+  embedded = false,
 }: {
   matches: Record<string, MatchResult>;
   onSettings: () => void;
   onFindDinner: () => void;
+  onBack?: () => void;
+  embedded?: boolean;
 }) {
   const pantry = useApp((s) => s.pantry);
   const recipes = useApp((s) => s.recipes);
@@ -150,12 +154,25 @@ export function PantryScreen({
   };
 
   return (
-    <div className="screen pantry-screen">
+    <div className={`screen pantry-screen ${embedded ? "embedded" : ""}`}>
       <div className="screen-head">
-        <div className="brand">
-          yummy<span className="dot" />
-        </div>
-        <div className="grow" />
+        {embedded ? (
+          <>
+            <button className="icon-btn" onClick={onBack} aria-label="Close pantry">
+              <Icon name="chevronLeft" size={20} />
+            </button>
+            <div className="grow">
+              <h1 className="title-md">My pantry</h1>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="brand">
+              yummy<span className="dot" />
+            </div>
+            <div className="grow" />
+          </>
+        )}
         <button className="icon-btn" onClick={onSettings} aria-label="Settings">
           <Icon name="settings" size={19} />
         </button>

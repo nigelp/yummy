@@ -14,7 +14,7 @@ The interface is React + Capacitor; the recipe brain (parsing, scaling, matching
 
 ## Install it (sideload)
 
-The signed APK is attached to **[Yummy v1.2.5](https://github.com/nigelp/yummy/releases/tag/v1.2.5)** — [direct download](https://github.com/nigelp/yummy/releases/download/v1.2.5/Yummy-1.2.5.apk) (24 MB, Android 8+). It is also at `apk/Yummy-1.2.5.apk` in a local build.
+The latest published signed APK is **[Yummy v1.2.5](https://github.com/nigelp/yummy/releases/tag/v1.2.5)** — [direct download](https://github.com/nigelp/yummy/releases/download/v1.2.5/Yummy-1.2.5.apk) (24 MB, Android 8+). This source tree builds **v1.3.2**; its local APK is `apk/Yummy-1.3.2.apk`.
 
 1. Copy it to your phone (USB, Drive, `adb push` — whatever is easiest).
 2. Open it. Android will ask permission to install from that app — allow it.
@@ -25,21 +25,27 @@ The APK is a local build artifact and isn't committed to git — build it with t
 Or with a phone connected over USB:
 
 ```bash
-adb install apk/Yummy-1.2.5.apk
+adb install -r apk/Yummy-1.3.2.apk
 ```
 
-App id `app.yummy.recipes` · version 1.2.5 · universal APK with `arm64-v8a`, `armeabi-v7a` and `x86_64` native libraries.
+App id `app.yummy.recipes` · version 1.3.2 · universal APK with `arm64-v8a`, `armeabi-v7a` and `x86_64` native libraries.
 
-### Sharing a recipe from Chrome
+### Sharing a recipe from Chrome or Instagram
 
-Open a recipe page → **Share** → **Yummy**. The share sheet target reads the page in the background and drops you into the editable draft.
+Open a recipe page → **Share** → **Yummy**. The share sheet target reads the page in the background and drops you into the editable draft. The same works for an Instagram post link — Yummy tries the public caption, and if Instagram withholds it, you can paste the caption or choose a screenshot from the gallery.
 
 ---
 
 ## What's inside
 
-### Pantry
-- A **search-first, collapsible shelf**: the page opens with search and quick-add chips, and the full 140-ingredient tile grid expands only when you want it.
+### Find (home)
+- **Search-first home**: tap any number of tags — meal (Breakfast, Lunch, Dinner, Something sweet, Snacks), style/diet (Vegan, Gluten Free, Quick…) and **ingredient tags derived from your own recipes** (Aubergine, Eggs, Garlic, Chickpeas…). Multi-select, with counts on every chip.
+- Type to filter your saved recipes and tags at the same time, then press **Search** / the keyboard’s Go key to jump straight to the results. Several meal tags mean “breakfast **or** dinner”; other tags narrow the set.
+- **Ingredients mode**: quick-add the basics, search the 140-item shelf, then see what your kitchen can make right now. Anything you add is matched immediately.
+- Web results live on **Discover**: the “Search the web for this” button carries your query and tags across, and arriving at Discover from Find applies them automatically.
+
+### Pantry, one tap deeper
+- The full shelf opens in a sheet from Find or Discover — same search, 140-ingredient tile grid, quantities and use-by dates, without crowding the home screen.
 - **Make it yours**: add custom ingredients (name, emoji, aisle) — they appear in the shelf, count as pantry matches for recipes, and can be deleted cleanly at any time.
 - Long-press a tile to set **quantity** and a **use-by date** — recipes then warn when you're short and prioritise food that needs eating.
 - **Staples** (salt, pepper, oil, flour, sugar, water) can be assumed automatically.
@@ -47,7 +53,10 @@ Open a recipe page → **Share** → **Yummy**. The share sheet target reads the
 
 ### Discover
 - Built around **meal types** rather than dinner-only: Breakfast, Lunch, Dinner, Something sweet and Snacks, each with its own section and best-match hero.
+- **Search that shapes the web request** — meal, tag and text filters are sent to TheMealDB as categories, ingredient filters and name searches, then post-filtered. “Aubergine” returns aubergine dishes, “chicken curry” returns chicken curries, and “eggs” finds egg dishes.
+- **No stale results**: each result set is cached against the exact filters that produced it, and changing a filter starts a fresh web search automatically. There's an explicit Search/Go action too.
 - **Style & diet filters** — Quick, Vegetarian, Vegan, Gluten Free, Low Carb, High Protein, Soup, Pasta, Fish, Meaty, Hearty, One Pan — applied across your library and the web feed.
+- **Cook-along videos**: a “Watch & cook” rail built from TheMealDB's free YouTube links (no API key), following the same filters and opening in YouTube. Recipes with a video also get a Watch the video link.
 - **Diverse featured recipes** from TheMealDB: a random selection plus breakfast, pasta and seafood batches, so the feed is never just dessert.
 - Tags are derived automatically for scraped recipes (ingredients, name and cooking method) and stored with every recipe.
 
@@ -68,7 +77,8 @@ Open a recipe page → **Share** → **Yummy**. The share sheet target reads the
 
 ### Capture
 - **Web link** — Rust reads JSON-LD, microdata and OpenGraph (via CapacitorHttp so there are no CORS walls), then gives you an editable draft.
-- **Photo / screenshot** — ML Kit OCR on-device, then Rust heuristics turn the text into ingredients and steps.
+- **Instagram** — paste an `instagram.com/p/…` or `/reel/…` link; Yummy tries the public caption and turns it into an editable draft. Instagram often withholds captions from apps, so there are two reliable fallbacks: **Paste the caption** (copy it in Instagram, paste it in Yummy) and **Choose a screenshot from the gallery**. No login, no account, no camera needed.
+- **Photo / screenshot** — pick a cookbook photo or a screenshot from your gallery; ML Kit OCR runs on-device, then Rust heuristics turn the text into ingredients and steps.
 - **By hand** — fast form with automatic ingredient parsing (`1½ cups`, `2–3 cloves`, `2 x 400 g cans`).
 - **Your own photos** — attach a dish photo to anything you save (or to a seed recipe later): it's resized to 1400px, compressed and stored on the phone. Tap the camera on a saved recipe to change it.
 - Everything lands in an editable draft before it's saved.
@@ -76,8 +86,9 @@ Open a recipe page → **Share** → **Yummy**. The share sheet target reads the
 ### Cooking
 - **Servings scaler** that keeps kitchen maths sane: animated amounts, proper fractions, eggs/lemons rounded with a note, pan-size and seasoning hints.
 - Metric ↔ imperial toggle with per-ingredient cup weights; spoon measures stay spoons.
-- **Cook mode**: one step at a time in large type, ingredient checklist, multiple named timers, screen wake-lock, and a “log this cook” finish.
+- **Cook mode**: one step at a time in large type, ingredient checklist, multiple named timers, screen wake-lock, and a “log this cook” finish that opens a small note sheet — save the note and the cook in one tap.
 - Notes and tweaks saved per recipe, favourite hearts, cook history.
+- **Share** any library card, recipe page or web result through the Android share sheet (with a copy-link fallback).
 
 ### Around the kitchen
 - Shopping list grouped by aisle, tickable, shareable, generated from any recipe's missing items.
@@ -93,7 +104,7 @@ Open a recipe page → **Share** → **Yummy**. The share sheet target reads the
 - Tapping **Save this recipe** on a featured or pantry-matched web dish moves it into your library as a normal web recipe. The sheet switches to **Start cooking** immediately, and the recipe is fully editable (photo, notes, favourites).
 
 ### Privacy
-No accounts, no analytics, no cloud. The library, pantry, plan and lists live in a JSON file in the app's private data directory on the phone. Only the optional “fresh from the web” row touches the network.
+No accounts, no analytics, no cloud. The library, pantry, plan and lists live in a JSON file in the app's private data directory on the phone. Only the optional web discovery, video links and Instagram import touch the network.
 
 ---
 

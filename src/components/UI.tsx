@@ -155,16 +155,19 @@ export function Chip({
   onClick,
   children,
   soft,
+  title,
 }: {
   active?: boolean;
   onClick?: () => void;
   children: ReactNode;
   soft?: boolean;
+  title?: string;
 }) {
   return (
     <button
       className={`chip ${soft ? "soft" : ""} ${active ? "on" : ""}`}
       onClick={onClick}
+      title={title}
       type="button"
     >
       {children}

@@ -1,30 +1,29 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useApp } from "../state/store";
 import { catalogById } from "../data/catalog";
-import { fetchFeatured, fetchPantryMatches } from "../core/api";
-import type { MatchResult, MealType, Recipe } from "../core/types";
+import { fetchFeatured, fetchPantryMatches, searchTextTokens } from "../core/api";
+import type { DiscoverSeed, MatchResult, MealType, Recipe } from "../core/types";
 import { Icon } from "../components/Icon";
 import { Art } from "../components/Art";
-import { FeaturedCard, MealCard, RecipeCard } from "../components/RecipeCard";
+import { FeaturedCard, MealCard, RecipeCard, VideoCard } from "../components/RecipeCard";
 import { Chip, EmptyState } from "../components/UI";
 import { FILTER_TAGS, MEAL_LABELS, tagLabel } from "../lib/classify";
 import { formatTime } from "../lib/format";
 
-type MealFilter = "all" | MealType;
-
 const MEAL_ORDER: MealType[] = ["breakfast", "lunch", "dinner", "dessert", "snack"];
 
-const MEAL_FILTERS: Array<{ id: MealFilter; label: string; emoji: string }> = [
-  { id: "all", label: "Everything", emoji: "🍽️" },
-  ...MEAL_ORDER.map((id) => ({ id, label: MEAL_LABELS[id].label, emoji: MEAL_LABELS[id].emoji })),
-];
+const MEAL_FILTERS: Array<{ id: MealType; label: string; emoji: string }> = MEAL_ORDER.map(
+  (id) => ({ id, label: MEAL_LABELS[id].label, emoji: MEAL_LABELS[id].emoji })
+);
 
 export function DiscoverScreen({
+  seed,
   matches,
   loading,
   onOpen,
   onGoPantry,
 }: {
+  seed?: DiscoverSeed;
   matches: Record<string, MatchResult>;
   loading: boolean;
   onOpen: (recipe: Recipe) => void;
@@ -41,18 +40,56 @@ export function DiscoverScreen({
   const pantry = useApp((s) => s.pantry);
   const [fetching, setFetching] = useState(false);
   const [featureError, setFeatureError] = useState<string | null>(null);
+  const [matchError, setMatchError] = useState<string | null>(null);
   const [almostOnly, setAlmostOnly] = useState(false);
-  const [meal, setMeal] = useState<MealFilter>("all");
-  const [tags, setTags] = useState<Set<string>>(new Set());
+  const [meals, setMeals] = useState<Set<MealType>>(
+    () => new Set(seed?.meals ?? [])
+  );
+  const [tags, setTags] = useState<Set<string>>(
+    () => new Set(seed?.tags ?? [])
+  );
+  const [query, setQuery] = useState(seed?.query ?? "");
   const [explore, setExplore] = useState(false);
   const [fetchingMatches, setFetchingMatches] = useState(false);
   const requested = useRef(false);
   const onlineRequested = useRef("");
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   const pantryKey = useMemo(() => Object.keys(pantry).sort().join("|"), [pantry]);
+  const mealsKey = useMemo(() => [...meals].sort().join("|"), [meals]);
+  const tagsKey = useMemo(() => [...tags].sort().join("|"), [tags]);
+  const queryKey = query.trim().toLowerCase();
+  const requestKey = useMemo(
+    () => [pantryKey, mealsKey, tagsKey, queryKey].filter(Boolean).join("~"),
+    [pantryKey, mealsKey, tagsKey, queryKey]
+  );
 
-  const refresh = async (force = false, includeMatches = false) => {
-    if (!force && !navigator.onLine) return;
+  useEffect(() => {
+    setMatchError(null);
+  }, [requestKey]);
+
+  const webFilters = () => ({
+    meals: [...meals],
+    tags: [...tags],
+    query: query.trim() || undefined,
+  });
+
+  const fetchMatchesNow = async () => {
+    if (!requestKey) return;
+    onlineRequested.current = requestKey;
+    setFetchingMatches(true);
+    setMatchError(null);
+    try {
+      const list = await fetchPantryMatches(Object.values(pantry), webFilters());
+      setPantryOnline(list, requestKey);
+    } catch {
+      setMatchError("Couldn't reach TheMealDB. Check your connection and try again.");
+    } finally {
+      setFetchingMatches(false);
+    }
+  };
+
+  const refresh = async (includeMatches = false) => {
     setFetching(true);
     setFeatureError(null);
     try {
@@ -72,15 +109,9 @@ export function DiscoverScreen({
       setFetching(false);
     }
 
-    if (includeMatches && pantryKey && navigator.onLine) {
+    if (includeMatches) {
       onlineRequested.current = "";
-      setFetchingMatches(true);
-      fetchPantryMatches(Object.values(pantry))
-        .then((list) => {
-          if (list.length) setPantryOnline(list, pantryKey);
-        })
-        .catch(() => undefined)
-        .finally(() => setFetchingMatches(false));
+      await fetchMatchesNow();
     }
   };
 
@@ -92,42 +123,63 @@ export function DiscoverScreen({
     if (stale) void refresh();
   }, []);
 
+  // Criteria carried over from Find. Starting a new seed also clears any
+  // previous web request marker so the fetch runs immediately.
   useEffect(() => {
-    if (!pantryKey || !navigator.onLine) return;
+    if (!seed) return;
+    setQuery(seed.query);
+    setTags(new Set(seed.tags));
+    setMeals(new Set(seed.meals));
+    setAlmostOnly(false);
+    setExplore(false);
+    onlineRequested.current = "";
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seed?.nonce]);
+
+  useEffect(() => {
+    if (!requestKey) return;
     const stale =
-      pantryKey !== onlineKey ||
+      requestKey !== onlineKey ||
       !onlineAt ||
       Date.now() - new Date(onlineAt).getTime() > 2 * 60 * 60 * 1000;
-    if (!stale || onlineRequested.current === pantryKey) return;
-    onlineRequested.current = pantryKey;
+    if (!stale || onlineRequested.current === requestKey) return;
+    onlineRequested.current = requestKey;
     let alive = true;
     let completed = false;
-    setFetchingMatches(true);
-    fetchPantryMatches(Object.values(pantry))
-      .then((list) => {
+    // Debounce so typing a search doesn't fire a request per keystroke.
+    const timer = window.setTimeout(() => {
+      if (!alive) return;
+      void fetchMatchesNow().finally(() => {
         completed = true;
-        if (alive && list.length) setPantryOnline(list, pantryKey);
-      })
-      .catch(() => undefined)
-      .finally(() => {
-        completed = true;
-        if (alive) setFetchingMatches(false);
       });
+    }, 450);
     return () => {
       alive = false;
+      window.clearTimeout(timer);
       setFetchingMatches(false);
       // React StrictMode mounts effects twice in dev; let an unfinished run retry.
-      if (onlineRequested.current === pantryKey && !completed) onlineRequested.current = "";
+      if (onlineRequested.current === requestKey && !completed) onlineRequested.current = "";
     };
-  }, [pantryKey, onlineKey, onlineAt, pantry, setPantryOnline]);
+    // webFilters is derived from these values.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestKey, onlineKey, onlineAt, pantry, mealsKey, tagsKey, queryKey, setPantryOnline]);
 
-  const all = useMemo(() => {
+  const matchedWeb = useMemo(
+    () => (onlineKey === requestKey ? pantryOnline : []),
+    [onlineKey, requestKey, pantryOnline]
+  );
+  const matchPool = useMemo(() => {
     const byId = new Map<string, Recipe>();
-    for (const recipe of [...recipes, ...featured, ...pantryOnline]) {
+    for (const recipe of [...recipes, ...matchedWeb]) byId.set(recipe.id, recipe);
+    return Array.from(byId.values());
+  }, [recipes, matchedWeb]);
+  const videoSource = useMemo(() => {
+    const byId = new Map<string, Recipe>();
+    for (const recipe of [...recipes, ...featured, ...matchedWeb]) {
       byId.set(recipe.id, recipe);
     }
     return Array.from(byId.values());
-  }, [recipes, featured, pantryOnline]);
+  }, [recipes, featured, matchedWeb]);
   const pantryCount = Object.keys(pantry).length;
   const coreOf = (recipe: Recipe) => matches[recipe.id]?.coreHave ?? 0;
   const pantryIdSet = useMemo(() => new Set(Object.keys(pantry)), [pantry]);
@@ -159,14 +211,29 @@ export function DiscoverScreen({
     return false;
   };
 
+  const queryTokens = useMemo(() => searchTextTokens(query), [query]);
   const filtered = useMemo(() => {
-    return all
+    return matchPool
       .filter((recipe) => {
-        if (meal !== "all" && recipe.mealType !== meal) return false;
+        if (
+          meals.size > 0 &&
+          (!recipe.mealType || !meals.has(recipe.mealType))
+        ) {
+          return false;
+        }
         const match = matches[recipe.id];
         if (almostOnly && match && match.total > 0 && match.score >= 100) return false;
         if (tags.size > 0 && !Array.from(tags).every((tag) => recipe.tags.includes(tag))) {
           return false;
+        }
+        if (queryTokens.length > 0) {
+          const haystack =
+            `${recipe.title} ${recipe.description} ${recipe.tags.join(" ")} ${recipe.tags
+              .map((tag) => tagLabel(tag))
+              .join(" ")} ${recipe.ingredients
+              .map((ingredient) => `${ingredient.item} ${ingredient.raw}`)
+              .join(" ")}`.toLowerCase();
+          if (!queryTokens.every((token) => haystack.includes(token))) return false;
         }
         return true;
       })
@@ -180,7 +247,11 @@ export function DiscoverScreen({
           (a.timeMin ?? 99) - (b.timeMin ?? 99)
         );
       });
-  }, [all, matches, meal, almostOnly, tags]);
+  }, [matchPool, matches, meals, almostOnly, tags, queryTokens]);
+
+  const queryNeedle = query.trim().toLowerCase();
+  const explicitSearch =
+    queryNeedle.length > 0 || tags.size > 0 || meals.size > 0;
 
   // Sharing one egg with an apple pie is not a match. A recipe has to either
   // use a lead ingredient, use several pantry items, or be a simple/breakfast dish.
@@ -188,7 +259,7 @@ export function DiscoverScreen({
     if (pantryCount === 0) return true;
     const match = matches[recipe.id];
     if (!match || match.coreHave <= 0) return false;
-    if (meal === "dessert" || meal === "snack") return true;
+    if (meals.has("dessert") || meals.has("snack")) return true;
     if (match.coreHave >= 2) return true;
     if (recipe.mealType === "dessert" || recipe.mealType === "snack") return false;
     if (recipe.mealType === "breakfast") return true;
@@ -206,12 +277,14 @@ export function DiscoverScreen({
   };
 
   const shown =
-    pantryCount > 0 && !explore ? filtered.filter(isRelevant) : filtered;
+    pantryCount > 0 && !explore && !explicitSearch
+      ? filtered.filter(isRelevant)
+      : filtered;
 
   const hero = useMemo(() => {
-    const pool = shown.length ? shown : pantryCount === 0 ? all : [];
+    const pool = shown.length ? shown : pantryCount === 0 ? matchPool : [];
     return pool.find((recipe) => recipe.mealType !== "dessert") ?? pool[0];
-  }, [shown, all, pantryCount]);
+  }, [shown, matchPool, pantryCount]);
 
   const heroMatch = hero ? matches[hero.id] : undefined;
 
@@ -227,6 +300,35 @@ export function DiscoverScreen({
   // The web rail is a browse feed, not a meal-filtered result set.
   const featuredVisible = useMemo(() => featured.slice(0, 10), [featured]);
 
+  // Videos follow the active filters but ignore pantry relevance — a watch-along
+  // is still useful when you don't have the ingredients yet.
+  const videoPool = useMemo(() => {
+    const seen = new Set<string>();
+    return videoSource
+      .filter((recipe) => {
+        if (!recipe.videoUrl) return false;
+        if (meals.size > 0 && (!recipe.mealType || !meals.has(recipe.mealType))) {
+          return false;
+        }
+        if (tags.size > 0 && !Array.from(tags).every((tag) => recipe.tags.includes(tag))) {
+          return false;
+        }
+        if (queryTokens.length > 0) {
+          const haystack =
+            `${recipe.title} ${recipe.description} ${recipe.tags.join(" ")} ${recipe.tags
+              .map((tag) => tagLabel(tag))
+              .join(" ")} ${recipe.ingredients
+              .map((ingredient) => `${ingredient.item} ${ingredient.raw}`)
+              .join(" ")}`.toLowerCase();
+          if (!queryTokens.every((token) => haystack.includes(token))) return false;
+        }
+        if (seen.has(recipe.id)) return false;
+        seen.add(recipe.id);
+        return true;
+      })
+      .slice(0, 8);
+  }, [videoSource, meals, tags, queryTokens]);
+
   const surprise = () => {
     const pool = shown.slice(0, Math.min(8, shown.length));
     const pick = pool[Math.floor(Math.random() * pool.length)];
@@ -240,21 +342,53 @@ export function DiscoverScreen({
     setTags(next);
   };
 
+  const toggleMeal = (meal: MealType) => {
+    const next = new Set(meals);
+    if (next.has(meal)) next.delete(meal);
+    else next.add(meal);
+    setMeals(next);
+  };
+
   const resetFilters = () => {
-    setMeal("all");
+    setMeals(new Set());
     setTags(new Set());
+    setQuery("");
+    setMatchError(null);
     setAlmostOnly(false);
     setExplore(false);
   };
 
-  const filtersActive = meal !== "all" || tags.size > 0 || almostOnly;
+  const submitSearch = (event: FormEvent) => {
+    event.preventDefault();
+    (document.activeElement as HTMLElement | null)?.blur();
+    onlineRequested.current = "";
+    void fetchMatchesNow();
+    window.setTimeout(() => {
+      resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 60);
+  };
+
+  const retryMatches = () => {
+    onlineRequested.current = "";
+    setMatchError(null);
+    void fetchMatchesNow();
+  };
+
+  const filtersActive =
+    meals.size > 0 || tags.size > 0 || almostOnly || query.trim().length > 0;
+  const singleMeal = meals.size === 1 ? [...meals][0] : undefined;
+  const visibleSections =
+    meals.size > 1 ? sections.filter((section) => meals.has(section.type)) : sections;
+  const matchesFresh = onlineKey === requestKey;
 
   return (
     <div className="screen">
       <div className="screen-head">
         <div className="grow">
           <p className="eyebrow">
-            {pantryCount ? `${pantryCount} things in your kitchen` : "an empty pantry, endless options"}
+            {pantryCount
+              ? `${pantryCount} ${pantryCount === 1 ? "thing" : "things"} in your kitchen`
+              : "an empty pantry, endless options"}
           </p>
           <h1 className="title-xl" style={{ marginTop: 4 }}>
             Find a meal
@@ -302,6 +436,36 @@ export function DiscoverScreen({
         </div>
       )}
 
+      <form className="find-search" onSubmit={submitSearch} style={{ marginTop: 12 }}>
+        <div className="search-wrap">
+          <Icon name="search" size={17} />
+          <input
+            className="input"
+            type="text"
+            inputMode="search"
+            enterKeyHint="search"
+            autoComplete="off"
+            spellCheck={false}
+            placeholder="Search recipes or ingredients…"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+          {query && (
+            <button
+              type="button"
+              className="icon-btn plain clear-search"
+              onClick={() => setQuery("")}
+              aria-label="Clear search"
+            >
+              <Icon name="close" size={15} />
+            </button>
+          )}
+        </div>
+        <button type="submit" className="search-go">
+          Search
+        </button>
+      </form>
+
       {hero && (
         <button className="hero pressable" onClick={() => onOpen(hero)} style={{ width: "100%", border: 0, padding: 0, textAlign: "left" }}>
           <Art art={hero.art} emoji={hero.emoji} image={hero.image} />
@@ -332,8 +496,15 @@ export function DiscoverScreen({
       )}
 
       <div className="chip-row" style={{ marginTop: 16 }}>
+        <Chip active={meals.size === 0} onClick={() => setMeals(new Set())}>
+          <span>🍽️</span> Everything
+        </Chip>
         {MEAL_FILTERS.map((option) => (
-          <Chip key={option.id} active={meal === option.id} onClick={() => setMeal(option.id)}>
+          <Chip
+            key={option.id}
+            active={meals.has(option.id)}
+            onClick={() => toggleMeal(option.id)}
+          >
             <span>{option.emoji}</span> {option.label}
           </Chip>
         ))}
@@ -350,11 +521,11 @@ export function DiscoverScreen({
         ))}
       </div>
 
-      {pantryCount > 0 && (
+      {pantryCount > 0 && !explicitSearch && (
         <div className="row" style={{ justifyContent: "space-between", margin: "2px 2px 0", gap: 8 }}>
           <span className="tiny faint">
             {fetchingMatches
-              ? "looking for web dishes with your ingredients…"
+              ? "looking for matching web recipes…"
               : explore
                 ? `Showing everything · ${shown.length} ideas`
                 : `${shown.length} ${shown.length === 1 ? "meal uses" : "meals use"} your pantry`}
@@ -370,9 +541,17 @@ export function DiscoverScreen({
       )}
 
       {filtersActive && (
-        <div className="row" style={{ justifyContent: "space-between", margin: "2px 2px 0" }}>
+        <div className="row" style={{ justifyContent: "space-between", margin: "2px 2px 0", gap: 8 }}>
           <span className="tiny faint">
-            {shown.length} {shown.length === 1 ? "meal" : "meals"} match
+            {shown.length} {shown.length === 1 ? "result" : "results"}
+            {[
+              ...Array.from(meals).map((meal) => MEAL_LABELS[meal].label),
+              ...Array.from(tags).map((tag) => tagLabel(tag)),
+              query.trim() ? `“${query.trim()}”` : "",
+            ]
+              .filter(Boolean)
+              .map((label) => ` · ${label}`)
+              .join("")}
           </span>
           <button className="ghost-btn" style={{ padding: "2px 4px" }} onClick={resetFilters}>
             Clear filters
@@ -380,7 +559,62 @@ export function DiscoverScreen({
         </div>
       )}
 
-      {shown.length === 0 && pantryCount > 0 && !explore ? (
+      {explicitSearch && (
+        <p className="web-status">
+          {fetchingMatches ? (
+            "Searching TheMealDB for web matches…"
+          ) : matchError ? (
+            <>
+              Couldn't reach TheMealDB.{" "}
+              <button className="link" onClick={retryMatches}>
+                Retry
+              </button>
+            </>
+          ) : matchesFresh ? (
+            `${matchedWeb.length} ${matchedWeb.length === 1 ? "web match" : "web matches"} loaded`
+          ) : (
+            "Waiting for web results…"
+          )}
+        </p>
+      )}
+
+      <div ref={resultsRef} className="discover-anchor" />
+
+      {shown.length === 0 && explicitSearch ? (
+        <EmptyState
+          emoji="🔍"
+          title="No recipes match that search"
+          body={
+            fetchingMatches
+              ? "We're asking TheMealDB for dishes that fit. Saved recipes still work offline."
+              : matchError
+                ? "TheMealDB couldn't be reached. Check your connection and retry, or clear the search."
+                : matchesFresh
+                  ? "No saved recipes or web matches for that. Try a simpler word or fewer tags."
+                  : "Waiting for the web search to finish…"
+          }
+          action={
+            <div className="row gap-8" style={{ flexWrap: "wrap", justifyContent: "center" }}>
+              {matchError && (
+                <button
+                  className="primary-btn"
+                  style={{ width: "auto", padding: "11px 16px" }}
+                  onClick={retryMatches}
+                >
+                  Try the web again
+                </button>
+              )}
+              <button
+                className="secondary-btn"
+                style={{ width: "auto", padding: "11px 16px" }}
+                onClick={resetFilters}
+              >
+                Clear filters
+              </button>
+            </div>
+          }
+        />
+      ) : shown.length === 0 && pantryCount > 0 && !explore ? (
         <EmptyState
           emoji="🧺"
           title="Nothing uses those ingredients yet"
@@ -411,14 +645,17 @@ export function DiscoverScreen({
             </button>
           }
         />
-      ) : meal === "all" ? (
-        sections.map((section) => (
+      ) : !singleMeal ? (
+        visibleSections.map((section) => (
           <div key={section.type}>
             <div className="section-head">
               <h2>
                 {MEAL_LABELS[section.type].emoji} {MEAL_LABELS[section.type].label}
               </h2>
-              <button className="link" onClick={() => setMeal(section.type)}>
+              <button
+                className="link"
+                onClick={() => setMeals(new Set([section.type]))}
+              >
                 {section.total > section.recipes.length ? `see all ${section.total}` : "see all"}
               </button>
             </div>
@@ -438,9 +675,9 @@ export function DiscoverScreen({
         <>
           <div className="section-head">
             <h2>
-              {MEAL_LABELS[meal].emoji} {MEAL_LABELS[meal].label}
+              {MEAL_LABELS[singleMeal].emoji} {MEAL_LABELS[singleMeal].label}
             </h2>
-            <span className="tiny faint">{MEAL_LABELS[meal].blurb}</span>
+            <span className="tiny faint">{MEAL_LABELS[singleMeal].blurb}</span>
           </div>
           <div className="stack gap-10">
             {shown.slice(0, 24).map((recipe) => (
@@ -457,9 +694,25 @@ export function DiscoverScreen({
 
       {loading && <p className="tiny faint center" style={{ marginTop: 10 }}>reading your pantry…</p>}
 
+      {videoPool.length > 0 && (
+        <>
+          <div className="section-head">
+            <h2>Watch &amp; cook</h2>
+            <span className="tiny faint">
+              {videoPool.length} {videoPool.length === 1 ? "video" : "videos"}
+            </span>
+          </div>
+          <div className="rail video-rail">
+            {videoPool.map((recipe) => (
+              <VideoCard key={recipe.id} recipe={recipe} />
+            ))}
+          </div>
+        </>
+      )}
+
       <div className="section-head">
         <h2>Browse more from the web</h2>
-        <button className="link" onClick={() => void refresh(true, true)} disabled={fetching}>
+        <button className="link" onClick={() => void refresh(true)} disabled={fetching}>
           {fetching ? "looking…" : "refresh"}
         </button>
       </div>
@@ -483,7 +736,7 @@ export function DiscoverScreen({
               className="secondary-btn"
               style={{ marginTop: 10 }}
               disabled={fetching}
-              onClick={() => void refresh(true, true)}
+              onClick={() => void refresh(true)}
             >
               {fetching ? "Trying…" : "Try again"}
             </button>

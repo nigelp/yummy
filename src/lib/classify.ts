@@ -1,4 +1,5 @@
 import type { MealType, Recipe } from "../core/types";
+import { catalogById } from "../data/catalog";
 
 const MEATY_IDS = new Set([
   "chicken", "chicken_breast", "chicken_thigh", "beef", "pork", "lamb", "bacon", "sausage", "turkey",
@@ -84,6 +85,15 @@ export function deriveTags(recipe: Recipe): string[] {
   }
 
   if (dessertish) tags.add("dessert");
+
+  // Ingredient tags make the library filterable by what's actually in a dish
+  // ("aubergine", "eggs", "chickpeas"). Staples are skipped so the tag list
+  // stays useful rather than reading "salt, pepper, oil" everywhere.
+  for (const id of ids) {
+    const definition = catalogById.get(id);
+    if (definition && !definition.staple) tags.add(id);
+  }
+
   return [...tags];
 }
 
@@ -120,9 +130,22 @@ export const FILTER_TAGS = [
   "one-pan",
 ] as const;
 
+/** British-friendly display names for catalog-backed ingredient tags. */
+const TAG_LABEL_OVERRIDES: Record<string, string> = {
+  eggplant: "Aubergine",
+  zucchini: "Courgette",
+  shrimp: "Prawns",
+  ground_beef: "Beef mince",
+  fish: "Fish",
+};
+
 export function tagLabel(tag: string): string {
+  const override = TAG_LABEL_OVERRIDES[tag];
+  if (override) return override;
+  const definition = catalogById.get(tag);
+  if (definition) return definition.name;
   return tag
-    .split("-")
+    .split(/[-_]/)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 }

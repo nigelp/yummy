@@ -2,6 +2,16 @@ export type UnitSystem = "metric" | "imperial";
 
 export type MealType = "breakfast" | "lunch" | "dinner" | "dessert" | "snack";
 
+export type FindMode = "tags" | "ingredients";
+
+/** Search criteria carried from Find to the web results on Discover. */
+export interface DiscoverSeed {
+  query: string;
+  meals: MealType[];
+  tags: string[];
+  nonce: number;
+}
+
 export interface Ingredient {
   raw: string;
   qty?: number;
@@ -28,6 +38,8 @@ export interface Recipe {
   description: string;
   image?: string;
   sourceUrl?: string;
+  /** YouTube (or other video) link, when the source provides one. */
+  videoUrl?: string;
   servings: number;
   timeMin?: number;
   cuisine?: string;
