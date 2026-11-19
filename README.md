@@ -14,13 +14,13 @@ The interface is React + Capacitor; the recipe brain (parsing, scaling, matching
 
 ## Install it (sideload)
 
-The latest published signed APK is **[Yummy v1.2.5](https://github.com/nigelp/yummy/releases/tag/v1.2.5)** — [direct download](https://github.com/nigelp/yummy/releases/download/v1.2.5/Yummy-1.2.5.apk) (24 MB, Android 8+). This source tree builds **v1.3.2**; its local APK is `apk/Yummy-1.3.2.apk`.
+The signed APK is attached to **[Yummy v1.3.2](https://github.com/nigelp/yummy/releases/tag/v1.3.2)** — [direct download](https://github.com/nigelp/yummy/releases/download/v1.3.2/Yummy-1.3.2.apk) (24 MB, Android 8+). The same build is at `apk/Yummy-1.3.2.apk` locally.
 
 1. Copy it to your phone (USB, Drive, `adb push` — whatever is easiest).
 2. Open it. Android will ask permission to install from that app — allow it.
 3. Install, open Yummy, and tap a few things you actually have in the cupboard.
 
-The APK is a local build artifact and isn't committed to git — build it with the commands below, or download it from the machine that built it.
+The APK isn't committed to git — download it from the release above, or build it with the commands below.
 
 Or with a phone connected over USB:
 
